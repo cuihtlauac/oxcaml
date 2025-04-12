@@ -191,18 +191,6 @@ Error: The kind of type "u" is value
          because of the annotation on the declaration of the type u.
 |}]
 
-type (_, _) t : immediate = K : 'a -> ('a, 'a) t
-[%%expect{|
-Line 1, characters 0-48:
-1 | type (_, _) t : immediate = K : 'a -> ('a, 'a) t
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The kind of type "t" is immutable_data with _
-         because it's a boxed variant type.
-       But the kind of type "t" must be a subkind of immediate
-         because of the annotation on the declaration of the type t.
-|}]
-(* CR aspsmith: lol *)
-
 type ('x, 'y) t : immutable_data with 'x with 'y =
   | T : 'a -> ('a, 'a) t
   | U : 'c -> ('b,  'c) t
@@ -293,4 +281,73 @@ Error: The kind of type "existential_abstract" is value
        But the kind of type "existential_abstract" must be a subkind of
          immediate
          because of the annotation on the declaration of the type existential_abstract.
+|}]
+
+(* _ in parameters *)
+
+(* CR layouts v2.8: Printing [_] here is not wrong (and in fact the overal inferred kind
+   is correct), but it's a little strange and will probably be confusing to users.
+   Probably the best thing to do is to number the distinct [_]s when printing and print
+   them as something like [_1], [_2], etc. *)
+
+type _ box = Box : 'a -> 'a box
+[%%expect{|
+type _ box = Box : 'a -> 'a box
+|}]
+
+let foo (x : int box @ contended) = use_uncontended x
+[%%expect{|
+val foo : int box @ contended -> unit = <fun>
+|}]
+
+let should_reject (x : int ref box @ contended) = use_uncontended x
+[%%expect{|
+Line 1, characters 66-67:
+1 | let should_reject (x : int ref box @ contended) = use_uncontended x
+                                                                      ^
+Error: This value is "contended" but expected to be "uncontended".
+|}]
+
+
+type (_, _) box2 = Box2 : 'a -> ('a, 'a) box2
+[%%expect{|
+type (_, _) box2 = Box2 : 'a -> ('a, 'a) box2
+|}]
+
+let foo (x : (int, int) box2 @ contended) = use_uncontended x
+[%%expect{|
+val foo : (int, int) box2 @ contended -> unit = <fun>
+|}]
+
+let should_reject (x : (int ref, int ref) box2 @ contended) = use_uncontended x
+[%%expect{|
+Line 1, characters 78-79:
+1 | let should_reject (x : (int ref, int ref) box2 @ contended) = use_uncontended x
+                                                                                  ^
+Error: This value is "contended" but expected to be "uncontended".
+|}]
+
+type show_me_the_kind : immediate = (int ref, int ref) box2
+[%%expect{|
+Line 1, characters 0-59:
+1 | type show_me_the_kind : immediate = (int ref, int ref) box2
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The kind of type "(int ref, int ref) box2" is mutable_data
+         because of the definition of box2 at line 1, characters 0-45.
+       But the kind of type "(int ref, int ref) box2" must be a subkind of
+         immediate
+         because of the definition of show_me_the_kind at line 1, characters 0-59.
+|}]
+
+(* Demonstrate that this is only a printing issue *)
+type _ box : immediate = Box : 'a -> 'a box
+
+[%%expect{|
+Line 1, characters 0-43:
+1 | type _ box : immediate = Box : 'a -> 'a box
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The kind of type "box" is immutable_data with _
+         because it's a boxed variant type.
+       But the kind of type "box" must be a subkind of immediate
+         because of the annotation on the declaration of the type box.
 |}]
