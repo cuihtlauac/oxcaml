@@ -173,7 +173,8 @@ type 'x u : immediate =
 Lines 1-2, characters 0-27:
 1 | type 'x u : immediate =
 2 | | P1 : ('b, 'a1) t -> 'a1 u
-Error: The kind of type "u" is value
+Error: The kind of type "u" is immutable_data with (type :
+value)
          because it's a boxed variant type.
        But the kind of type "u" must be a subkind of immediate
          because of the annotation on the declaration of the type u.
@@ -185,7 +186,8 @@ type 'a u : immutable_data =
 Lines 1-2, characters 0-25:
 1 | type 'a u : immutable_data =
 2 | | P1 : ('b, 'a) t -> 'a u
-Error: The kind of type "u" is value
+Error: The kind of type "u" is immutable_data with (type :
+value)
          because it's a boxed variant type.
        But the kind of type "u" must be a subkind of immutable_data
          because of the annotation on the declaration of the type u.
@@ -204,7 +206,8 @@ type 'a t : immediate =
 Lines 1-2, characters 0-25:
 1 | type 'a t : immediate =
 2 |   | A : 'b -> 'b option t
-Error: The kind of type "t" is value
+Error: The kind of type "t" is immutable_data with (type :
+value)
          because it's a boxed variant type.
        But the kind of type "t" must be a subkind of immediate
          because of the annotation on the declaration of the type t.
@@ -222,7 +225,8 @@ type 'a t : immediate =
 Lines 1-2, characters 0-48:
 1 | type 'a t : immediate =
 2 |   | A : ('b : immutable_data). 'b -> 'b option t
-Error: The kind of type "t" is immutable_data
+Error: The kind of type "t" is immutable_data with (type :
+immutable_data)
          because it's a boxed variant type.
        But the kind of type "t" must be a subkind of immediate
          because of the annotation on the declaration of the type t.
@@ -260,7 +264,8 @@ type 'a abstract : value mod portable
 Lines 2-3, characters 0-70:
 2 | type existential_abstract : immediate =
 3 |   | P : ('a : value mod portable). 'a abstract -> existential_abstract
-Error: The kind of type "existential_abstract" is value mod portable
+Error: The kind of type "existential_abstract" is immutable_data
+         with (type : value mod portable) abstract
          because it's a boxed variant type.
        But the kind of type "existential_abstract" must be a subkind of
          immediate
@@ -276,7 +281,9 @@ and 'a abstract : value mod portable
 Lines 1-2, characters 0-73:
 1 | type existential_abstract : immediate =
 2 |   | P : ('a : value mod portable). 'a abstract t2 -> existential_abstract
-Error: The kind of type "existential_abstract" is value
+Error: The kind of type "existential_abstract" is immutable_data
+         with (type :
+value) with (type : value mod portable) abstract/2
          because it's a boxed variant type.
        But the kind of type "existential_abstract" must be a subkind of
          immediate

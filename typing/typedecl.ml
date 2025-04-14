@@ -1988,7 +1988,6 @@ let rec update_decl_jkind env dpath decl =
           in
           let has_gadt_constructors = List.exists (fun cstr -> Option.is_some cstr.cd_res) cstrs in
           let module Variant_parts = struct
-                     (* let _, existentials = Datarepr.constructor_existentials cstr.cd_args cstr.cd_res in *)
             type t =
               { cstr_arg_tys : type_expr list
               ; cstr_arg_modalities : Mode.Modality.Value.Const.t list
@@ -2005,9 +2004,9 @@ let rec update_decl_jkind env dpath decl =
               ; seen = Btype.TypeSet.empty
               }
           end in
-          let { Variant_parts.cstr_arg_tys; cstr_arg_modalities; params; ret_args; _ } =
+          let { Variant_parts.cstr_arg_tys; cstr_arg_modalities; ret_args; params;  _ } =
             List.fold_left
-              (fun { Variant_parts.cstr_arg_tys; cstr_arg_modalities; params; ret_args; seen } cstr ->
+              (fun { Variant_parts.cstr_arg_tys; cstr_arg_modalities; ret_args; params; seen } cstr ->
                  let cstr_arg_tys, cstr_arg_modalities =
                     match cstr.cd_args with
                     | Cstr_tuple args ->
@@ -2021,9 +2020,9 @@ let rec update_decl_jkind env dpath decl =
                         (cstr_arg_tys, cstr_arg_modalities)
                         lbls
                  in
-                 let params, ret_args, seen = match cstr.cd_res with
-                   | None when not has_gadt_constructors -> params, ret_args, seen
-                   | None -> decl.type_params @ params, decl.type_params @ ret_args, seen
+                 let `Args ret_args, `Params params, seen = match cstr.cd_res with
+                   | None when not has_gadt_constructors -> `Args ret_args, `Params params, seen
+                   | None -> `Args (decl.type_params @ ret_args), `Params (decl.type_params @ params), seen
                    | Some res ->
                      let existentials =
                        Datarepr.constructor_unbound_type_vars cstr
@@ -2031,17 +2030,27 @@ let rec update_decl_jkind env dpath decl =
                        |> Seq.map Types.Transient_expr.type_expr
                        |> List.of_seq
                      in
+                     let tof_kinds =
+                       List.map
+                         (fun ty ->
+                            match get_desc ty with
+                            | Tof_kind _ -> ty
+                            | Tvar { jkind; _ } | Tunivar { jkind; _ } ->
+                              Btype.newgenty (Tof_kind jkind)
+                            | _ -> assert false)
+                       existentials
+                     in
                      (match Types.get_desc res with
                       | Tconstr (_, args, _) ->
                         List.fold_left2
-                          (fun (params, ret_args, seen) arg param ->
+                          (fun (`Args ret_args, `Params params, seen) arg param ->
                              if Btype.TypeSet.mem arg seen
-                             then (params, ret_args, seen)
+                             then (`Args ret_args, `Params params, seen)
                              else match Types.get_desc arg, Types.get_desc param with
                                | Tvar _, Tvar _ ->
-                                 (param :: params, arg :: ret_args, Btype.TypeSet.add arg seen)
-                               | _ -> (params, ret_args, seen)  )
-                          (existentials @ params, existentials @ ret_args, seen)
+                                 (`Args (arg :: ret_args), `Params (param :: params), Btype.TypeSet.add arg seen)
+                               | _ -> (`Args ret_args, `Params params, seen))
+                          (`Args (existentials @ ret_args), `Params (tof_kinds @ params), seen)
                           args
                           decl.type_params
                       | _ -> Misc.fatal_error "cd_res must be Tconstr")
