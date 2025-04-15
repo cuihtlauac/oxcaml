@@ -193,6 +193,7 @@ value)
          because of the annotation on the declaration of the type u.
 |}]
 
+(* CR layouts v2.8: It'd also be OK to infer or accept [immutable_data with 'y] here. *)
 type ('x, 'y) t : immutable_data with 'x with 'y =
   | T : 'a -> ('a, 'a) t
   | U : 'c -> ('b,  'c) t
@@ -243,19 +244,18 @@ type 'a cell =
 
 type 'a cell : mutable_data with 'a =
   | Nil
-  | Cons : { value : 'a; mutable next: 'a cell } -> 'a cell
+  | Cons : { value : 'b; mutable next: 'b cell } -> 'b cell
 [%%expect{|
 type 'a cell =
     Nil
-  | Cons : { value : 'a; mutable next : 'a cell; } -> 'a cell
+  | Cons : { value : 'b; mutable next : 'b cell; } -> 'b cell
 |}]
 
-(* Abstract types over existentials shouldn't show up in the with-bounds - they should
-   just get treated as best.
+(* Existentials that are the type arguments to abstract types should end up as [type :
+   kind] in the with-bounds.
 
    This test intentionally triggers a kind error to check this via the printed kind in the
-   error message.
-*)
+   error message. *)
 type 'a abstract : value mod portable
 type existential_abstract : immediate =
   | P : ('a : value mod portable). 'a abstract -> existential_abstract
@@ -272,27 +272,67 @@ Error: The kind of type "existential_abstract" is immutable_data
          because of the annotation on the declaration of the type existential_abstract.
 |}]
 
+type existential_abstract : immutable_data with (type : value mod portable) abstract =
+  | P : ('a : value mod portable). 'a abstract -> existential_abstract
+[%%expect{|
+type existential_abstract =
+    P : ('a : value mod portable). 'a abstract -> existential_abstract
+|}]
+
+module M : sig
+  type t : immutable_data with (type : value mod portable) abstract
+end = struct
+  type t = P : ('a : value mod portable). 'a abstract -> t
+end
+[%%expect{|
+module M :
+  sig type t : immutable_data with (type : value mod portable) abstract end
+|}]
+
+module M : sig
+  type t : immutable_data with (type : value) abstract
+end = struct
+  type t = P : ('a : immediate). 'a abstract -> t
+end
+(* CR layouts v2.8: This might be safe to accept, but it's tricky and unlikely to be
+   especially useful. Revisit later. *)
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = P : ('a : immediate). 'a abstract -> t
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = P : ('a : immediate). 'a abstract -> t end
+       is not included in
+         sig type t : immutable_data with (type : value) abstract end
+       Type declarations do not match:
+         type t = P : ('a : immediate). 'a abstract -> t
+       is not included in
+         type t : immutable_data with (type : value) abstract
+       The kind of the first is immutable_data
+         with (type : immediate) abstract
+         because of the definition of t at line 4, characters 2-49.
+       But the kind of the first must be a subkind of immutable_data
+         with (type : value) abstract
+         because of the definition of t at line 2, characters 2-54.
+|}]
+
 (* Some hard recursive types with existentials *)
-type existential_abstract : immediate =
+type existential_abstract : immutable_data with (type : value) with (type : value mod portable) abstract =
   | P : ('a : value mod portable). 'a abstract t2 -> existential_abstract
 and 'a t2 = P : { contents : 'a; other : 'b option } -> 'a t2
 and 'a abstract : value mod portable
 [%%expect{|
-Lines 1-2, characters 0-73:
-1 | type existential_abstract : immediate =
-2 |   | P : ('a : value mod portable). 'a abstract t2 -> existential_abstract
-Error: The kind of type "existential_abstract" is immutable_data
-         with (type :
-value) with (type : value mod portable) abstract/2
-         because it's a boxed variant type.
-       But the kind of type "existential_abstract" must be a subkind of
-         immediate
-         because of the annotation on the declaration of the type existential_abstract.
+type existential_abstract =
+    P : ('a : value mod portable). 'a abstract t2 -> existential_abstract
+and 'a t2 = P : { contents : 'a; other : 'b option; } -> 'a t2
+and 'a abstract : value mod portable
 |}]
 
 (* _ in parameters *)
 
-(* CR layouts v2.8: Printing [_] here is not wrong (and in fact the overal inferred kind
+(* CR layouts v2.8: Printing [_] here is not wrong (and in fact the overall inferred kind
    is correct), but it's a little strange and will probably be confusing to users.
    Probably the best thing to do is to number the distinct [_]s when printing and print
    them as something like [_1], [_2], etc. *)
