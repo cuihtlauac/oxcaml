@@ -2020,6 +2020,9 @@ let rec update_decl_jkind env dpath decl =
                         (cstr_arg_tys, cstr_arg_modalities)
                         lbls
                  in
+                 (* Note: we're using polymorphic variants here to fake labeled tuples; we
+                    can replace this with labeled tuples once we can build with a compiler
+                    that supports those. *)
                  let `Args ret_args, `Params params, seen = match cstr.cd_res with
                    | None when not has_gadt_constructors -> `Args ret_args, `Params params, seen
                    | None -> `Args (decl.type_params @ ret_args), `Params (decl.type_params @ params), seen
@@ -2034,10 +2037,13 @@ let rec update_decl_jkind env dpath decl =
                        List.map
                          (fun ty ->
                             match get_desc ty with
-                            | Tof_kind _ -> ty
+                            | Tof_kind _ ->
+                              (* We shouldn't be able to hit this, but it's harmless and
+                                 defensive to just keep these types the same. *)
+                              ty
                             | Tvar { jkind; _ } | Tunivar { jkind; _ } ->
                               Btype.newgenty (Tof_kind jkind)
-                            | _ -> assert false)
+                            | _ -> Misc.fatal_error "constructor_unbound_type_vars must return Tvar or Tunivar")
                        existentials
                      in
                      (match Types.get_desc res with
@@ -2060,7 +2066,6 @@ let rec update_decl_jkind env dpath decl =
               Variant_parts.empty
               cstrs
           in
-          (* let _ = (params, ret_args) in *)
           let cstr_arg_tys =
             if Misc.Stdlib.List.is_empty params
             then cstr_arg_tys
@@ -2768,13 +2773,6 @@ let check_redefined_unit (td: Parsetree.type_declaration) =
 
 (* Normalize the jkinds in a list of (potentially mutually recursive) type declarations *)
 let normalize_decl_jkinds env shapes decls =
-  let unbound_type_vars =
-    List.fold_left
-      (fun acc (_, _, _, decl) ->
-         Btype.TypeSet.union acc (Datarepr.unbound_type_vars decl))
-      Btype.TypeSet.empty
-      decls
-  in
   let rec normalize_decl_jkind env original_decl allow_any_crossing decl path =
     let type_unboxed_version =
       Option.map (fun type_unboxed_version ->
@@ -2784,7 +2782,6 @@ let normalize_decl_jkinds env shapes decls =
     in
     let normalized_jkind =
       Jkind.normalize
-        ~unbound_type_vars
         ~mode:Require_best
         ~jkind_of_type:(fun ty -> Some (Ctype.type_jkind env ty))
         decl.type_jkind

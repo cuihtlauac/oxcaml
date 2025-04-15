@@ -770,7 +770,6 @@ type normalize_mode =
 let normalize' =
   ref
     (fun
-      ?unbound_type_vars:_
       ~mode:(_ : normalize_mode)
       ~jkind_of_type:_
       (_ : Types.jkind_l)
@@ -866,8 +865,8 @@ module Layout_and_axes = struct
      of this function for these axes is undefined; do *not* look at the results for these
      axes.
   *)
-  let normalize (type layout l r1 r2) ?(unbound_type_vars = Btype.TypeSet.empty)
-      ~jkind_of_type ~(mode : r2 normalize_mode) ~skip_axes
+  let normalize (type layout l r1 r2) ~jkind_of_type ~(mode : r2 normalize_mode)
+      ~skip_axes
       ?(map_type_info :
          (type_expr -> With_bounds_type_info.t -> With_bounds_type_info.t)
          option) (t : (layout, l * r1) layout_and_axes) :
@@ -992,7 +991,7 @@ module Layout_and_axes = struct
           (* CR layouts v2.8: we can do better by early-terminating on a per-axis
              basis *)
           bounds_so_far, No_with_bounds, Sufficient_fuel
-        | (ty, ti) :: bs -> begin
+        | (ty, ti) :: bs -> (
           (* Map the type's info before expanding the type *)
           let ti =
             match map_type_info with
@@ -1013,7 +1012,7 @@ module Layout_and_axes = struct
             (* If [ty] is not relevant to any axes, then we can safely drop it and
                thereby avoid doing the work of expanding it. *)
             loop ctl bounds_so_far relevant_axes bs
-          | false -> begin
+          | false -> (
             let join_bounds b1 b2 ~relevant_axes =
               let value_for_axis (type a) ~(axis : a Axis.t) : a =
                 if Axis_set.mem relevant_axes axis
@@ -1039,10 +1038,8 @@ module Layout_and_axes = struct
             in
             let found_jkind_for_ty new_ctl b_upper_bounds b_with_bounds quality
                 : Mod_bounds.t * (l * r2) with_bounds * Fuel_status.t =
-              match quality, mode, Btype.TypeSet.mem ty unbound_type_vars with
-              | Best, _, _
-              | Not_best, Ignore_best, _
-              | Not_best, Require_best, true ->
+              match quality, mode with
+              | Best, _ | Not_best, Ignore_best ->
                 (* The relevant axes are the intersection of the relevant axes within our
                    branch of the with-bounds tree, and the relevant axes on this
                    particular with-bound *)
@@ -1073,7 +1070,7 @@ module Layout_and_axes = struct
                 ( bounds,
                   With_bounds.join nested_with_bounds bs',
                   Fuel_status.both fuel_result1 fuel_result2 )
-              | Not_best, Require_best, false ->
+              | Not_best, Require_best ->
                 (* CR layouts v2.8: The type annotation on the next line is
                    necessary only because [loop] is
                    local. Bizarre. Investigate. *)
@@ -1088,90 +1085,24 @@ module Layout_and_axes = struct
               found_jkind_for_ty ctl_after_stop Mod_bounds.max No_with_bounds
                 Not_best [@nontail]
             | Skip -> loop ctl bounds_so_far relevant_axes bs (* skip [b] *)
-            | Continue ctl_after_unpacking_b -> begin
-                let jkind = begin
-                  Btype.TypeSet.iter (fun ty ->
-                    Btype.mark_type (Transient_expr.type_expr ty)
-                  ) unbound_type_vars;
-                  Misc.try_finally
-                    ~always:(fun () ->
-                      Btype.TypeSet.iter (fun ty ->
-                        Btype.unmark_type (Transient_expr.type_expr ty)
-                      ) unbound_type_vars
-                    )
-                    (fun () -> jkind_of_type ty)
-                end in
-                match jkind with
-                | Some b_jkind ->
-                  found_jkind_for_ty ctl_after_unpacking_b
-                    b_jkind.jkind.mod_bounds b_jkind.jkind.with_bounds
-                    b_jkind.quality [@nontail]
-                | None ->
-                  (* kind of b is not principally known, so we treat it as having
-                     the max bound (only along the axes we care about for this
-                     type!) *)
-                  found_jkind_for_ty ctl_after_unpacking_b Mod_bounds.max
-                    No_with_bounds Not_best [@nontail]
-              end
-          end
-        end
+            | Continue ctl_after_unpacking_b -> (
+              match jkind_of_type ty with
+              | Some b_jkind ->
+                found_jkind_for_ty ctl_after_unpacking_b
+                  b_jkind.jkind.mod_bounds b_jkind.jkind.with_bounds
+                  b_jkind.quality [@nontail]
+              | None ->
+                (* kind of b is not principally known, so we treat it as having
+                   the max bound (only along the axes we care about for this
+                   type!) *)
+                found_jkind_for_ty ctl_after_unpacking_b Mod_bounds.max
+                  No_with_bounds Not_best [@nontail])))
       in
       let mod_bounds = Mod_bounds.set_max_in_set t.mod_bounds skip_axes in
       let mod_bounds, with_bounds, fuel_status =
         loop Loop_control.starting mod_bounds
           (Axis_set.complement skip_axes)
           (With_bounds.to_list t.with_bounds)
-      in
-      (* Make sure there are no unbound type vars mentioned in the resulting with-bounds,
-         by taking any remaining types mentioning unbound type vars, normalizing them with
-         mode = ignore_best, and joining their mod bounds with ours
-
-         This can only happen if we have unbound type vars, and if we were running with
-         mode=Require_best. *)
-      let mod_bounds, with_bounds =
-        match with_bounds, Btype.TypeSet.is_empty unbound_type_vars, mode with
-        | With_bounds wbs, false, Require_best ->
-          let mbs, wbs =
-            Seq.fold_left
-              (fun (mb, wb_res) (wb_ty, ti) ->
-                if unbound_type_vars |> Btype.TypeSet.to_seq
-                   |> Seq.exists (fun ty ->
-                          let open struct
-                            exception Occur
-                          end in
-                          let rec deep_occur_rec t0 ty =
-                            if get_level ty >= get_level t0
-                               && Btype.try_mark_node ty
-                            then (
-                              if eq_type ty t0 then Stdlib.raise Occur;
-                              Btype.iter_type_expr (deep_occur_rec t0) ty)
-                          in
-                          match
-                            deep_occur_rec (Transient_expr.type_expr ty) wb_ty
-                          with
-                          | () ->
-                            Btype.unmark_type wb_ty;
-                            false
-                          | exception Occur ->
-                            Btype.unmark_type wb_ty;
-                            true)
-                then
-                  let mod_bounds =
-                    match jkind_of_type wb_ty with
-                    | None -> Mod_bounds.max
-                    | Some jkind ->
-                      (!normalize' jkind ~unbound_type_vars ~mode:Ignore_best
-                         ~jkind_of_type)
-                        .jkind
-                        .mod_bounds
-                  in
-                  Mod_bounds.join mb mod_bounds, wb_res
-                else mb, With_bounds.add_bound wb_ty ti wb_res)
-              (mod_bounds, With_bounds_types.empty)
-              (With_bounds_types.to_seq wbs)
-          in
-          mbs, (With_bounds wbs : (l * r2) with_bounds)
-        | wbs, _, _ -> mod_bounds, wbs
       in
       { t with mod_bounds; with_bounds }, fuel_status
 end
@@ -2418,13 +2349,13 @@ let for_object =
 (******************************)
 (* elimination and defaulting *)
 
-let[@inline] normalize ?unbound_type_vars ~mode ~jkind_of_type t =
+let[@inline] normalize ~mode ~jkind_of_type t =
   let mode : _ Layout_and_axes.normalize_mode =
     match mode with Require_best -> Require_best | Ignore_best -> Ignore_best
   in
   let jkind, fuel_result =
-    Layout_and_axes.normalize ?unbound_type_vars ~jkind_of_type
-      ~skip_axes:Axis_set.empty ~mode t.jkind
+    Layout_and_axes.normalize ~jkind_of_type ~skip_axes:Axis_set.empty ~mode
+      t.jkind
   in
   { t with
     jkind;
