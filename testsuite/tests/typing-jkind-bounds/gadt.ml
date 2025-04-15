@@ -480,20 +480,26 @@ type exist_row2 = Mk : ([> `A | `B of int ref] as 'a) -> exist_row2
 type exist_row2 = Mk : [> `A | `B of int ref ] -> exist_row2
 |}]
 
-let foo (x : exist_row1 @ nonportable) = use_portable x
+let foo (x : exist_row2 @ nonportable) = use_portable x
 [%%expect{|
 Line 1, characters 54-55:
-1 | let foo (x : exist_row1 @ nonportable) = use_portable x
+1 | let foo (x : exist_row2 @ nonportable) = use_portable x
                                                           ^
 Error: This value is "nonportable" but expected to be "portable".
 |}]
 
-let foo (x : exist_row1 @ contended) = use_uncontended x
+let foo (x : exist_row2 @ contended) = use_uncontended x
 [%%expect{|
 Line 1, characters 55-56:
-1 | let foo (x : exist_row1 @ contended) = use_uncontended x
+1 | let foo (x : exist_row2 @ contended) = use_uncontended x
                                                            ^
 Error: This value is "contended" but expected to be "uncontended".
+|}]
+
+type 'a exist_row3 = Mk : ([> `A | `B of int ref] as 'a) -> 'a option exist_row3
+[%%expect{|
+type 'a exist_row3 =
+    Mk : 'a -> ([> `A | `B of int ref ] as 'a) option exist_row3
 |}]
 
 (* In the future, maybe local equations will let us figure out that something mode crosses

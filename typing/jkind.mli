@@ -498,7 +498,10 @@ val for_boxed_record : Types.label_declaration list -> Types.jkind_l
 (** Choose an appropriate jkind for an unboxed record type. *)
 val for_unboxed_record : Types.label_declaration list -> Types.jkind_l
 
-(** Choose an appropriate jkind for a boxed variant type. *)
+(** Choose an appropriate jkind for a boxed variant type.
+
+    [decl_params] is the parameters in the head of the type declaration. [type_apply]
+    should be [Ctype.apply] partially applied to an [env]. *)
 val for_boxed_variant :
   decl_params:Types.type_expr list ->
   type_apply:

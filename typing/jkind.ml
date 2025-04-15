@@ -2291,9 +2291,68 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
     let has_gadt_constructors =
       List.exists (fun cstr -> Option.is_some cstr.cd_res) cstrs
     in
+    (* Note [With-bounds for GADTs]
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+       Inferring with-bounds for gadts goes like so:
+
+       1. Build up a big list of all the types of the arguments of the constructors and
+       their modalities (actually two separate lists with the same length).
+       2. Call [Ctype.apply] (passed in as [type_apply]) to substitute the arguments on
+       the return types of gadts with the arguments to the type declaration. For
+       example, in the following type declaration:
+
+       {[
+         type 'a t = A : 'b option -> 'b t
+       ]}
+
+       we turn the ['b option] field into ['a option], by substitutiong ['b] for ['a].
+
+       There are a few ways this is slightly subtle ([2a]-[2c]):
+
+       2a. For repeated types on arguments, eg in the following type:
+
+       {[
+         type ('x, 'y) t = A : 'a -> ('a, 'a) t
+       ]}
+
+       we take only the *first* time we see an argument, treating that as an index, and
+       omit all other possible instantiations. That means that in the above type, we'll
+       substitute ['x] for both instances of ['a] and infer a kind of [immutable_data with
+       'x]. This is sound, but somewhat restrictive; in a perfect world, we'd infer a kind
+       of [immutable_data with ('x OR 'y)], but that breaks type inference. At some point
+       in the future, we should at least change the subsumption algorithm to accept either
+       [immutable_data with 'x] or [immutable_data with 'y] (* CR layouts v2.8: do that *)
+
+       2b. If a type appears in an argument as something other than a direct TVar, eg in
+       the following type:
+
+       {[
+         type 'a t : A : 'a -> 'a option t
+       ]}
+
+       we just treat it as if it was existential (see [2c]); this is notably different
+       than what [Datarepr.constructor_existentials] considers to be an existential type
+       variable.
+
+       2c. We replace all existential type variables (including those that appear in the
+       return type, but only nested under some other type), except for row variables, with
+       a [Tof_kind] representing the kind of those existential type variables. Since those
+       have best kinds, they'll just get normalized away during normalization, except in
+       the case that they show up as an argument to a type constructor representing an
+       abstract type - in which case, they still end up in the (fully normalized)
+       with-bounds.
+
+       3. Take the substituted argument types and modalities and add them to the
+       with-bounds for the overall variant.
+    *)
     let module Variant_parts = struct
+      (** Information about the parts of a variant, used to build up its with-bounds.
+
+          See the Note [With-bounds for GADTs] above *)
       type t =
-        { cstr_arg_tys : type_expr list;
+        { (* These first two fields will always have the same length. *)
+          cstr_arg_tys : type_expr list;
           cstr_arg_modalities : Mode.Modality.Value.Const.t list;
           params : type_expr list;
           ret_args : type_expr list;
@@ -2310,6 +2369,7 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
     end in
     let { Variant_parts.cstr_arg_tys; cstr_arg_modalities; ret_args; params; _ }
         =
+      (* This left fold is step 1 from Note [With-bounds for GADTs] *)
       List.fold_left
         (fun { Variant_parts.cstr_arg_tys;
                cstr_arg_modalities;
@@ -2344,6 +2404,10 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
                 `Params (decl_params @ params),
                 seen )
             | Some res -> (
+              (* Gather "existentials" (including types which are only bound because
+                 they're under another type expression) for the constructor.
+
+                 See step 2b and 2c from Note [With-bounds for GADTs] *)
               let existentials =
                 !constructor_unbound_type_vars_excluding_row_variables cstr
                 |> Btype.TypeSet.to_seq
@@ -2371,10 +2435,18 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
                 List.fold_left2
                   (fun (`Args ret_args, `Params params, seen) arg param ->
                     if Btype.TypeSet.mem arg seen
-                    then `Args ret_args, `Params params, seen
+                    then
+                      (* We've already seen this type parameter, so don't add it again.
+                         See Step 2a from Note [With-bounds for GADTs] *)
+                      `Args ret_args, `Params params, seen
                     else
                       match Types.get_desc arg, Types.get_desc param with
                       | Tvar _, Tvar _ ->
+                        (* Only add types which are direct variables. Note that types
+                           which aren't variables might themselves /contain/ variables; if
+                           those variables don't show up on another parameter, they're
+                           treated as existentials. See step 2b from Note [With-bounds for
+                           GADTs] *)
                         ( `Args (arg :: ret_args),
                           `Params (param :: params),
                           Btype.TypeSet.add arg seen )
@@ -2398,6 +2470,7 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
       then cstr_arg_tys
       else
         match
+          (* Step 2 from Note [With-bounds for GADTs] *)
           type_apply ret_args
             (Btype.newgenty
                (Ttuple (List.map (fun ty -> None, ty) cstr_arg_tys)))
