@@ -49,3 +49,14 @@ val constructor_existentials :
 
 val constructor_unbound_type_vars_excluding_row_variables
   : constructor_declaration -> Btype.TypeSet.t
+(** Given a constructor declaration, returns a set of all type variables that are
+    *unbound* by the constructor, excluding row variables.
+
+    This is similar to existentials, except it also considers type variables which only
+    appear as arguments to another type in the constructor's return type as unbound. For
+    example, ['a] is considered unbound in the following constructor:
+
+    {[
+      | P : 'a -> 'a option t
+    ]}
+*)
