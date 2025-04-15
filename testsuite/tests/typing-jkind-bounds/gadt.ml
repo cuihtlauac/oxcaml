@@ -358,3 +358,48 @@ Error: The kind of type "box" is immutable_data with _
        But the kind of type "box" must be a subkind of immediate
          because of the annotation on the declaration of the type box.
 |}]
+
+(* Existential row variables *)
+
+type exist_row1 = Mk : ([< `A | `B of int ref] as 'a) -> exist_row1
+[%%expect{|
+type exist_row1 = Mk : [< `A | `B of int ref ] -> exist_row1
+|}]
+
+let foo (x : exist_row1 @ nonportable) = use_portable x
+(* CR layouts v2.8: This should be accepted *)
+[%%expect{|
+Line 1, characters 54-55:
+1 | let foo (x : exist_row1 @ nonportable) = use_portable x
+                                                          ^
+Error: This value is "nonportable" but expected to be "portable".
+|}]
+
+let foo (x : exist_row1 @ contended) = use_uncontended x
+[%%expect{|
+Line 1, characters 55-56:
+1 | let foo (x : exist_row1 @ contended) = use_uncontended x
+                                                           ^
+Error: This value is "contended" but expected to be "uncontended".
+|}]
+
+type exist_row2 = Mk : ([> `A | `B of int ref] as 'a) -> exist_row2
+[%%expect{|
+type exist_row2 = Mk : [> `A | `B of int ref ] -> exist_row2
+|}]
+
+let foo (x : exist_row1 @ nonportable) = use_portable x
+[%%expect{|
+Line 1, characters 54-55:
+1 | let foo (x : exist_row1 @ nonportable) = use_portable x
+                                                          ^
+Error: This value is "nonportable" but expected to be "portable".
+|}]
+
+let foo (x : exist_row1 @ contended) = use_uncontended x
+[%%expect{|
+Line 1, characters 55-56:
+1 | let foo (x : exist_row1 @ contended) = use_uncontended x
+                                                           ^
+Error: This value is "contended" but expected to be "uncontended".
+|}]

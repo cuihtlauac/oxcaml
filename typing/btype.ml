@@ -256,8 +256,7 @@ let set_static_row_name decl path =
                   (*  Utilities for type traversal  *)
                   (**********************************)
 
-let fold_row f init row =
-  let result =
+let fold_row_fields f init row =
     List.fold_left
       (fun init (_, fi) ->
          match row_field_repr fi with
@@ -266,7 +265,9 @@ let fold_row f init row =
          | _ -> init)
       init
       (row_fields row)
-  in
+
+let fold_row f init row =
+  let result = fold_row_fields f init row in
   match get_desc (row_more row) with
   | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil | Tof_kind _ ->
     begin match
@@ -276,6 +277,9 @@ let fold_row f init row =
     | Some result -> result
     end
   | _ -> assert false
+
+let iter_row_fields f row =
+  fold_row_fields (fun () v -> f v) () row
 
 let iter_row f row =
   fold_row (fun () v -> f v) () row

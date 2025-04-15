@@ -2028,7 +2028,7 @@ let rec update_decl_jkind env dpath decl =
                    | None -> `Args (decl.type_params @ ret_args), `Params (decl.type_params @ params), seen
                    | Some res ->
                      let existentials =
-                       Datarepr.constructor_unbound_type_vars cstr
+                       Datarepr.constructor_unbound_type_vars_excluding_row_variables cstr
                        |> Btype.TypeSet.to_seq
                        |> Seq.map Types.Transient_expr.type_expr
                        |> List.of_seq

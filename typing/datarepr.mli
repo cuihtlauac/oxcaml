@@ -47,6 +47,5 @@ val constructor_existentials :
     - the existential variables introduced by the constructor
  *)
 
-val constructor_unbound_type_vars : constructor_declaration -> Btype.TypeSet.t
-
-val unbound_type_vars : type_declaration -> Btype.TypeSet.t
+val constructor_unbound_type_vars_excluding_row_variables
+  : constructor_declaration -> Btype.TypeSet.t
