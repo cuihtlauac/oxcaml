@@ -403,3 +403,26 @@ Line 1, characters 55-56:
                                                            ^
 Error: This value is "contended" but expected to be "uncontended".
 |}]
+
+(* In the future, maybe local equations will let us figure out that something mode crosses
+   more than we would know otherwise. *)
+type 'a idx = | I : int idx | Br : bool ref idx
+type exist = Exist : ('a : value mod portable). 'a * 'a idx -> exist
+let foo (exist @ contended) eq =
+  match exist with
+  | Exist (x, idx) -> begin
+    match idx with
+      | I ->
+        use_uncontended exist;
+        x
+    | Br -> 0
+  end
+(* CR layouts v2.8: Maybe this should be accepted? *)
+[%%expect{|
+type 'a idx = I : int idx | Br : bool ref idx
+type exist = Exist : ('a : value mod portable). 'a * 'a idx -> exist
+Line 8, characters 24-29:
+8 |         use_uncontended exist;
+                            ^^^^^
+Error: This value is "contended" but expected to be "uncontended".
+|}]
