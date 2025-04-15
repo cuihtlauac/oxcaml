@@ -163,7 +163,7 @@ type 'a u : immutable_data with 'a =
 type 'a u = P1 : ('a1, 'b) t -> 'a1 u | P2 : ('a2, 'b) t -> 'a2 u
 |}]
 
-(* Any existentials directly in the with-bounds get treated as if they're [Best]
+(* Any existentials in the with-bounds turn into [(type : kind)]
    (this test intentionally causes a subkind error to make sure that the existentials
    don't show up in the with-bounds)
 *)
@@ -279,12 +279,23 @@ type existential_abstract =
     P : ('a : value mod portable). 'a abstract -> existential_abstract
 |}]
 
+type existential_abstract : value mod portable =
+  | P : ('a : value mod portable). 'a abstract -> existential_abstract
+[%%expect{|
+type existential_abstract =
+    P : ('a : value mod portable). 'a abstract -> existential_abstract
+|}]
+
+let foo (x : existential_abstract @ nonportable) =
+  use_portable x
+
 module M : sig
   type t : immutable_data with (type : value mod portable) abstract
 end = struct
   type t = P : ('a : value mod portable). 'a abstract -> t
 end
 [%%expect{|
+val foo : existential_abstract -> unit = <fun>
 module M :
   sig type t : immutable_data with (type : value mod portable) abstract end
 |}]
@@ -328,6 +339,47 @@ type existential_abstract =
     P : ('a : value mod portable). 'a abstract t2 -> existential_abstract
 and 'a t2 = P : { contents : 'a; other : 'b option; } -> 'a t2
 and 'a abstract : value mod portable
+|}]
+
+(* Actually mode crossing for [type : kind] *)
+
+module type S = sig
+  type 'a b
+  type t = P : ('a : value mod portable) b -> t
+end
+[%%expect{|
+module type S =
+  sig type 'a b type t = P : ('a : value mod portable). 'a b -> t end
+|}]
+
+module F1(M : S) = struct
+  let foo (x : M.t @ nonportable) = use_portable x
+end
+[%%expect{|
+Line 2, characters 49-50:
+2 |   let foo (x : M.t @ nonportable) = use_portable x
+                                                     ^
+Error: This value is "nonportable" but expected to be "portable".
+|}]
+
+module F2(M : S with type 'a b = int) = struct
+  type t : immutable_data = M.t
+  let foo1 (x : M.t @ nonportable) = use_portable x
+  let foo2 (x : M.t @ contended) = use_uncontended x
+end
+[%%expect{|
+module F2 :
+  functor
+    (M : sig
+           type 'a b = int
+           type t = P : ('a : value mod portable). 'a b -> t
+         end)
+    ->
+    sig
+      type t = M.t
+      val foo1 : M.t -> unit
+      val foo2 : M.t @ contended -> unit
+    end
 |}]
 
 (* _ in parameters *)
