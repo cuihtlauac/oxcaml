@@ -766,19 +766,6 @@ module With_bounds = struct
 end
 
 (* Forward declarations *)
-type normalize_mode =
-  | Require_best
-  | Ignore_best
-
-let normalize' =
-  ref
-    (fun
-      ~mode:(_ : normalize_mode)
-      ~jkind_of_type:_
-      (_ : Types.jkind_l)
-      :
-      Types.jkind_l
-    -> assert false)
 
 module Layout_and_axes = struct
   module Allow_disallow = Allowance.Magic_allow_disallow (struct
@@ -2465,6 +2452,10 @@ let for_object =
 (******************************)
 (* elimination and defaulting *)
 
+type normalize_mode =
+  | Require_best
+  | Ignore_best
+
 let[@inline] normalize ~mode ~jkind_of_type t =
   let mode : _ Layout_and_axes.normalize_mode =
     match mode with Require_best -> Require_best | Ignore_best -> Ignore_best
@@ -2484,8 +2475,6 @@ let[@inline] normalize ~mode ~jkind_of_type t =
       | Ran_out_of_fuel -> true
       | _ -> t.ran_out_of_fuel_during_normalize)
   }
-
-let () = normalize' := normalize
 
 let get_layout_defaulting_to_value { jkind = { layout; _ }; _ } =
   Layout.default_to_value_and_get layout
