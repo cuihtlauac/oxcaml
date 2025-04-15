@@ -339,3 +339,7 @@ let constructor_unbound_type_vars_excluding_row_variables cstr =
         (newgenty (Ttuple (List.map (fun ty -> None, ty) tyl)))
     in
     TypeSet.diff arg_vars_set bound_vars
+
+let () =
+  Jkind.constructor_unbound_type_vars_excluding_row_variables
+  := constructor_unbound_type_vars_excluding_row_variables

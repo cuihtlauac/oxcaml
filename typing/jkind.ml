@@ -29,6 +29,9 @@ let raw_type_expr : (Format.formatter -> type_expr -> unit) ref =
 
 let set_raw_type_expr p = raw_type_expr := p
 
+let constructor_unbound_type_vars_excluding_row_variables =
+  ref (fun _ -> assert false)
+
 module Nonempty_list = Misc.Nonempty_list
 
 (* A *sort* is the information the middle/back ends need to be able to
@@ -2274,7 +2277,7 @@ let for_unboxed_record lbls =
   in
   Builtin.product ~why:Unboxed_record tys_modalities layouts
 
-let for_boxed_variant cstrs =
+let for_boxed_variant ~decl_params ~type_apply cstrs =
   let open Types in
   if List.for_all
        (fun cstr ->
@@ -2298,16 +2301,129 @@ let for_boxed_variant cstrs =
         ~why:Boxed_variant
       |> mark_best
     in
-    let add_cstr_args cstr jkind =
-      match cstr.cd_args with
-      | Cstr_tuple args ->
-        List.fold_right
-          (fun arg ->
-            add_with_bounds ~modality:arg.ca_modalities ~type_expr:arg.ca_type)
-          args jkind
-      | Cstr_record lbls -> add_labels_as_with_bounds lbls jkind
+    let has_gadt_constructors =
+      List.exists (fun cstr -> Option.is_some cstr.cd_res) cstrs
     in
-    List.fold_right add_cstr_args cstrs base
+    let module Variant_parts = struct
+      type t =
+        { cstr_arg_tys : type_expr list;
+          cstr_arg_modalities : Mode.Modality.Value.Const.t list;
+          params : type_expr list;
+          ret_args : type_expr list;
+          seen : Btype.TypeSet.t
+        }
+
+      let empty =
+        { cstr_arg_tys = [];
+          cstr_arg_modalities = [];
+          params = [];
+          ret_args = [];
+          seen = Btype.TypeSet.empty
+        }
+    end in
+    let { Variant_parts.cstr_arg_tys; cstr_arg_modalities; ret_args; params; _ }
+        =
+      List.fold_left
+        (fun { Variant_parts.cstr_arg_tys;
+               cstr_arg_modalities;
+               ret_args;
+               params;
+               seen
+             } cstr ->
+          let cstr_arg_tys, cstr_arg_modalities =
+            match cstr.cd_args with
+            | Cstr_tuple args ->
+              List.fold_left
+                (fun (tys, ms) arg ->
+                  arg.ca_type :: tys, arg.ca_modalities :: ms)
+                (cstr_arg_tys, cstr_arg_modalities)
+                args
+            | Cstr_record lbls ->
+              List.fold_left
+                (fun (tys, ms) lbl ->
+                  lbl.ld_type :: tys, lbl.ld_modalities :: ms)
+                (cstr_arg_tys, cstr_arg_modalities)
+                lbls
+          in
+          (* Note: we're using polymorphic variants here to fake labeled tuples; we
+             can replace this with labeled tuples once we can build with a compiler
+             that supports those. *)
+          let `Args ret_args, `Params params, seen =
+            match cstr.cd_res with
+            | None when not has_gadt_constructors ->
+              `Args ret_args, `Params params, seen
+            | None ->
+              ( `Args (decl_params @ ret_args),
+                `Params (decl_params @ params),
+                seen )
+            | Some res -> (
+              let existentials =
+                !constructor_unbound_type_vars_excluding_row_variables cstr
+                |> Btype.TypeSet.to_seq
+                |> Seq.map Types.Transient_expr.type_expr
+                |> List.of_seq
+              in
+              let tof_kinds =
+                List.map
+                  (fun ty ->
+                    match get_desc ty with
+                    | Tof_kind _ ->
+                      (* We shouldn't be able to hit this, but it's harmless and
+                         defensive to just keep these types the same. *)
+                      ty
+                    | Tvar { jkind; _ } | Tunivar { jkind; _ } ->
+                      Btype.newgenty (Tof_kind jkind)
+                    | _ ->
+                      Misc.fatal_error
+                        "constructor_unbound_type_vars must return Tvar or \
+                         Tunivar")
+                  existentials
+              in
+              match Types.get_desc res with
+              | Tconstr (_, args, _) ->
+                List.fold_left2
+                  (fun (`Args ret_args, `Params params, seen) arg param ->
+                    if Btype.TypeSet.mem arg seen
+                    then `Args ret_args, `Params params, seen
+                    else
+                      match Types.get_desc arg, Types.get_desc param with
+                      | Tvar _, Tvar _ ->
+                        ( `Args (arg :: ret_args),
+                          `Params (param :: params),
+                          Btype.TypeSet.add arg seen )
+                      | _ -> `Args ret_args, `Params params, seen)
+                  ( `Args (existentials @ ret_args),
+                    `Params (tof_kinds @ params),
+                    seen )
+                  args decl_params
+              | _ -> Misc.fatal_error "cd_res must be Tconstr")
+          in
+          { Variant_parts.cstr_arg_tys;
+            cstr_arg_modalities;
+            params;
+            ret_args;
+            seen
+          })
+        Variant_parts.empty cstrs
+    in
+    let cstr_arg_tys =
+      if Misc.Stdlib.List.is_empty params
+      then cstr_arg_tys
+      else
+        match
+          type_apply ret_args
+            (Btype.newgenty
+               (Ttuple (List.map (fun ty -> None, ty) cstr_arg_tys)))
+            params
+          |> Types.get_desc
+        with
+        | Ttuple args -> List.map snd args
+        | _ -> Misc.fatal_error "apply should have returned a tuple here"
+    in
+    List.fold_left2
+      (fun jkind type_expr modality ->
+        add_with_bounds ~modality ~type_expr jkind)
+      base cstr_arg_tys cstr_arg_modalities
 
 let for_boxed_tuple elts =
   List.fold_right
