@@ -326,14 +326,16 @@ Error: Signature mismatch:
 |}]
 
 (* Some hard recursive types with existentials *)
-type existential_abstract : immutable_data with (type : value) with (type : value mod portable) abstract =
+type existential_abstract : value mod portable with (type : value mod portable) abstract =
   | P : ('a : value mod portable). 'a abstract t2 -> existential_abstract
-and 'a t2 = P : { contents : 'a; other : 'b option } -> 'a t2
+and 'a t2 = P : { contents : 'a; other : ('b : value mod portable) option } -> 'a t2
 and 'a abstract : value mod portable
 [%%expect{|
 type existential_abstract =
     P : ('a : value mod portable). 'a abstract t2 -> existential_abstract
-and 'a t2 = P : { contents : 'a; other : 'b option; } -> 'a t2
+and 'a t2 =
+    P : 'a ('b : value mod portable). { contents : 'a; other : 'b option;
+    } -> 'a t2
 and 'a abstract : value mod portable
 |}]
 
@@ -445,6 +447,16 @@ Error: The kind of type "box" is immutable_data with _
          because it's a boxed variant type.
        But the kind of type "box" must be a subkind of immediate
          because of the annotation on the declaration of the type box.
+|}]
+
+(* Constraints and existentials *)
+
+type 'a t constraint 'a = 'b option
+type 'c t2 : immutable_data with (type : value) option t =
+  | K : 'd t -> 'd t2
+[%%expect{|
+type 'a t constraint 'a = 'b option
+type 'c t2 = K : 'a option t -> 'a option t2
 |}]
 
 (* Existential row variables *)
