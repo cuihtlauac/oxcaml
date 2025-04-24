@@ -364,7 +364,8 @@ and expression_desc =
   | Pexp_constant of constant
       (** Expressions constant such as [1], ['a'], ["true"], [1.0], [1l],
             [1L], [1n] *)
-  | Pexp_let of rec_flag * value_binding list * expression
+  | Pexp_let of mutable_flag * rec_flag * value_binding list * expression
+      (* jra: need to update this documentation *)
       (** [Pexp_let(flag, [(P1,E1) ; ... ; (Pn,En)], E)] represents:
             - [let P1 = E1 and ... and Pn = EN in E]
                when [flag] is {{!Asttypes.rec_flag.Nonrecursive}[Nonrecursive]},
@@ -1231,7 +1232,8 @@ and structure_item =
 
 and structure_item_desc =
   | Pstr_eval of expression * attributes  (** [E] *)
-  | Pstr_value of rec_flag * value_binding list
+  | Pstr_value of mutable_flag * rec_flag * value_binding list
+      (* jra: update this documentation *)
       (** [Pstr_value(rec, [(P1, E1 ; ... ; (Pn, En))])] represents:
             - [let P1 = E1 and ... and Pn = EN]
                 when [rec] is {{!Asttypes.rec_flag.Nonrecursive}[Nonrecursive]},

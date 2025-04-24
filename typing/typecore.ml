@@ -4506,7 +4506,7 @@ let type_approx_fun_one_param
 let rec type_approx env sexp ty_expected =
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
-    Pexp_let (_, _, e) -> type_approx env e ty_expected
+    Pexp_let (_, _, _, e) -> type_approx env e ty_expected
   | Pexp_function (params, c, body) ->
       type_approx_function env params c body ty_expected ~loc
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e ty_expected
@@ -5749,7 +5749,8 @@ and type_expect_
         exp_type = type_constant cst;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_let(Nonrecursive,
+    (* jra: do not ignore mutable flag *)
+  | Pexp_let(_, Nonrecursive,
              [{pvb_pat=spat; pvb_attributes=[]; _ } as vb], sbody)
     when turn_let_into_match spat ->
       (* TODO: allow non-empty attributes? *)
@@ -5758,7 +5759,7 @@ and type_expect_
         {sexp with
          pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
         ty_expected_explained
-  | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
+  | Pexp_let(_, rec_flag, spat_sexp_list, sbody) ->
       let existential_context =
         if rec_flag = Recursive then In_rec
         else if List.compare_length_with spat_sexp_list 1 > 0 then In_group

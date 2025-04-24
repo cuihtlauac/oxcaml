@@ -3098,7 +3098,8 @@ and type_structure ?(toplevel = None) funct_body anchor env sstr =
             raise (Error (sexpr.pexp_loc, env, Toplevel_unnamed_nonvalue sort))
           end;
         Tstr_eval (expr, sort, attrs), [], shape_map, env
-    | Pstr_value (rec_flag, sdefs) ->
+      (* jra: mutable flag should not be ignored *)
+    | Pstr_value (_, rec_flag, sdefs) ->
         let (defs, newenv) =
           Typecore.type_binding env rec_flag ~force_toplevel sdefs in
         let defs = match rec_flag with

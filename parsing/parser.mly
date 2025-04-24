@@ -670,9 +670,10 @@ let addlb lbs lb =
   if lb.lb_is_pun && lbs.lbs_extension = None then syntax_error ();
   { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
 
-let mklbs ext rf lb =
+let mklbs ext mf rf lb =
   let lbs = {
     lbs_bindings = [];
+    lbs_mutable = mf;
     lbs_rec = rf;
     lbs_extension = ext;
   } in
@@ -689,7 +690,7 @@ let val_of_let_bindings ~loc lbs =
            ?value_constraint:lb.lb_constraint lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
-  let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
+  let str = mkstr ~loc (Pstr_value(lbs.lbs_mutable, lbs.lbs_rec, List.rev bindings)) in
   match lbs.lbs_extension with
   | None -> str
   | Some id -> ghstr ~loc (Pstr_extension((id, PStr [str]), []))
@@ -703,7 +704,7 @@ let expr_of_let_bindings ~loc lbs body =
           ?value_constraint:lb.lb_constraint  lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
-    mkexp_attrs ~loc (Pexp_let(lbs.lbs_rec, List.rev bindings, body))
+    mkexp_attrs ~loc (Pexp_let(lbs.lbs_mutable, lbs.lbs_rec, List.rev bindings, body))
       (lbs.lbs_extension, [])
 
 let class_of_let_bindings ~loc lbs body =
@@ -3230,12 +3231,13 @@ let_bindings(EXT):
   LET
   ext = EXT
   attrs1 = attributes
+  mutable_flag = mutable_flag
   rec_flag = rec_flag
   body = let_binding_body
   attrs2 = post_item_attributes
     {
       let attrs = attrs1 @ attrs2 in
-      mklbs ext rec_flag (mklb ~loc:$sloc true body attrs)
+      mklbs ext mutable_flag rec_flag (mklb ~loc:$sloc true body attrs)
     }
 ;
 and_let_binding:

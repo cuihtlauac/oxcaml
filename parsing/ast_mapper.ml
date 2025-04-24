@@ -433,7 +433,8 @@ module M = struct
     | Pstr_eval (x, attrs) ->
         let attrs = sub.attributes sub attrs in
         eval ~loc ~attrs (sub.expr sub x)
-    | Pstr_value (r, vbs) -> value ~loc r (List.map (sub.value_binding sub) vbs)
+      (* jra: mutable flag should not be ignored *)
+    | Pstr_value (_, r, vbs) -> value ~loc r (List.map (sub.value_binding sub) vbs)
     | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
     | Pstr_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
@@ -529,7 +530,8 @@ module E = struct
     match desc with
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
     | Pexp_constant x -> constant ~loc ~attrs (sub.constant sub x)
-    | Pexp_let (r, vbs, e) ->
+      (* jra: mutable flag should not be ignored here *)
+    | Pexp_let (_, r, vbs, e) ->
         let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs)
           (sub.expr sub e)
     | Pexp_function (ps, c, b) ->

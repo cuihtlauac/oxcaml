@@ -993,12 +993,14 @@ and expression ctxt f x =
         pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
              (* "try@;@[<2>%a@]@\nwith@\n%a"*)
           (expression reset_ctxt) e  (case_list ctxt) l
-    | Pexp_let (rf, l, e) ->
+    | Pexp_let (mf, rf, l, e) ->
         (* pp f "@[<2>let %a%a in@;<1 -2>%a@]"
            (*no indentation here, a new line*) *)
         (*   rec_flag rf *)
+        (*   mutable_flag mf *)
+        (* jra: what? *)
         pp f "@[<2>%a in@;<1 -2>%a@]"
-          (bindings reset_ctxt) (rf,l)
+          (bindings reset_ctxt) (mf,rf,l)
           (expression ctxt) e
     | Pexp_apply
       ({ pexp_desc = Pexp_extension({txt = "extension.exclave"}, PStr []) },
@@ -1410,7 +1412,7 @@ and class_expr ctxt f x =
           (class_expr ctxt) e
     | Pcl_let (rf, l, ce) ->
         pp f "%a@ in@ %a"
-          (bindings ctxt) (rf,l)
+          (bindings ctxt) (Immutable,rf,l) (* jra: don't hard-code Immutable *)
           (class_expr ctxt) ce
     | Pcl_apply (ce, l) ->
         pp f "((%a)@ %a)" (* Cf: #7200 *)
@@ -1816,7 +1818,8 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; pvb_constraint = ct; pvb_modes = mode
       end
 
 (* [in] is not printed *)
-and bindings ctxt f (rf,l) =
+(* jra: don't ignore mutable flag *)
+and bindings ctxt f (_,rf,l) =
   let binding kwd rf f x =
     (* The other modes are printed inside [binding] *)
     let legacy, x =
@@ -1856,9 +1859,9 @@ and structure_item ctxt f x =
         (item_attributes ctxt) attrs
   | Pstr_type (_, []) -> assert false
   | Pstr_type (rf, l)  -> type_def_list ctxt f (rf, true, l)
-  | Pstr_value (rf, l) ->
+  | Pstr_value (mf, rf, l) ->
       (* pp f "@[<hov2>let %a%a@]"  rec_flag rf bindings l *)
-      pp f "@[<2>%a@]" (bindings ctxt) (rf,l)
+      pp f "@[<2>%a@]" (bindings ctxt) (mf,rf,l)
   | Pstr_typext te -> type_extension ctxt f te
   | Pstr_exception ed -> exception_declaration ctxt f ed
   | Pstr_module x ->

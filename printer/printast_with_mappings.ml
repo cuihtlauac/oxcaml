@@ -332,8 +332,8 @@ and expression i ppf x =
   match x.pexp_desc with
   | Pexp_ident (li) -> line i ppf "Pexp_ident %a\n" fmt_longident_loc li;
   | Pexp_constant (c) -> line i ppf "Pexp_constant %a\n" fmt_constant c;
-  | Pexp_let (rf, l, e) ->
-      line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
+  | Pexp_let (mf, rf, l, e) ->
+      line i ppf "Pexp_let %a %a\n" fmt_mutable_flag mf fmt_rec_flag rf;
       list i value_binding ppf l;
       expression i ppf e;
   | Pexp_function (params, c, body) ->
@@ -1069,8 +1069,8 @@ and structure_item i ppf x =
       line i ppf "Pstr_eval\n";
       attributes i ppf attrs;
       expression i ppf e;
-  | Pstr_value (rf, l) ->
-      line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
+  | Pstr_value (mf, rf, l) ->
+      line i ppf "Pstr_value %a %a\n" fmt_mutable_flag mf fmt_rec_flag rf;
       list i value_binding ppf l;
   | Pstr_primitive vd ->
       line i ppf "Pstr_primitive\n";

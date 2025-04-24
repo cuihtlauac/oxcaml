@@ -239,7 +239,8 @@ let rec add_expr bv exp =
   match exp.pexp_desc with
     Pexp_ident l -> add bv l
   | Pexp_constant _ -> ()
-  | Pexp_let(rf, pel, e) ->
+    (* jra: mutable flag should not be ignored here *)
+  | Pexp_let(_, rf, pel, e) ->
       let bv = add_bindings rf bv pel in add_expr bv e
   | Pexp_function (params, constraint_, body) ->
       let bv = List.fold_left add_function_param bv params in
@@ -637,7 +638,8 @@ and add_struct_item (bv, m) item : _ String.Map.t * _ String.Map.t =
   match item.pstr_desc with
     Pstr_eval (e, _attrs) ->
       add_expr bv e; (bv, m)
-  | Pstr_value(rf, pel) ->
+    (* jra: mutable flag should not be ignored here *)
+  | Pstr_value(_, rf, pel) ->
       let bv = add_bindings rf bv pel in (bv, m)
   | Pstr_primitive vd ->
       add_type bv vd.pval_type; (bv, m)

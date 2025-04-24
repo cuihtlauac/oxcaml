@@ -118,7 +118,7 @@ let iterator =
     | Pexp_tuple ([] | [_]) -> invalid_tuple loc
     | Pexp_record ([], _) -> empty_record loc
     | Pexp_apply (_, []) -> no_args loc
-    | Pexp_let (_, [], _) -> empty_let loc
+    | Pexp_let (_, _, [], _) -> empty_let loc
     | Pexp_ident id
     | Pexp_construct (id, _)
     | Pexp_field (_, id)
@@ -184,7 +184,7 @@ let iterator =
     let loc = st.pstr_loc in
     match st.pstr_desc with
     | Pstr_type (_, []) -> empty_type loc
-    | Pstr_value (_, []) -> empty_let loc
+    | Pstr_value (_, _, []) -> empty_let loc
     | _ -> ()
   in
   let signature_item self sg =

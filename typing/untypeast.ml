@@ -172,7 +172,8 @@ let structure_item sub item =
     match item.str_desc with
       Tstr_eval (exp, _, attrs) -> Pstr_eval (sub.expr sub exp, attrs)
     | Tstr_value (rec_flag, list) ->
-        Pstr_value (rec_flag, List.map (sub.value_binding sub) list)
+        (* jra: don't hard-code Immutable *)
+        Pstr_value (Immutable, rec_flag, List.map (sub.value_binding sub) list)
     | Tstr_primitive vd ->
         Pstr_primitive (sub.value_description sub vd)
     | Tstr_type (rec_flag, list) ->
@@ -494,7 +495,8 @@ let expression sub exp =
       Texp_ident (_path, lid, _, _, _) -> Pexp_ident (map_loc sub lid)
     | Texp_constant cst -> Pexp_constant (constant cst)
     | Texp_let (rec_flag, list, exp) ->
-        Pexp_let (rec_flag,
+        (* jra: Immutable should not be hard-coded *)
+        Pexp_let (Immutable, rec_flag,
           List.map (sub.value_binding sub) list,
           sub.expr sub exp)
     | Texp_function { params; body } ->
