@@ -269,7 +269,10 @@ let fold_row_fields f init row =
 let fold_row f init row =
   let result = fold_row_fields f init row in
   match get_desc (row_more row) with
-  | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil | Tof_kind _ ->
+  | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil
+    (* Tof_kind can appear in [row_more] in case the row's row variable was existentially
+       quantified in a GADT *)
+  | Tof_kind _ ->
     begin match
       Option.map (fun (_,l) -> List.fold_left f result l) (row_name row)
     with
