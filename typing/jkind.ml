@@ -2306,7 +2306,7 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
          type 'a t = A : 'b option -> 'b t
        ]}
 
-       we turn the ['b option] field into ['a option], by substitutiong ['b] for ['a].
+       we turn the ['b option] field into ['a option], by substituting ['b] |-> ['a].
 
        There are a few ways this is slightly subtle ([2a]-[2c]):
 
