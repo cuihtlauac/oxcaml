@@ -21,7 +21,6 @@ module MTC = More_type_creators
 module TG = Type_grammar
 module TE = Typing_env
 module TEE = Typing_env_extension
-module Vec128 = Vector_types.Vec128.Bit_pattern
 open Or_unknown.Let_syntax
 
 let all_aliases_of env simple_opt ~in_env =
@@ -633,13 +632,19 @@ and meet_expanded_head0 env (descr1 : ET.descr) (descr2 : ET.descr) :
   | Naked_vec128 head1, Naked_vec128 head2 ->
     map_result ~f:ET.create_naked_vec128
       (meet_head_of_kind_naked_vec128 env head1 head2)
+  | Naked_vec256 head1, Naked_vec256 head2 ->
+    map_result ~f:ET.create_naked_vec256
+      (meet_head_of_kind_naked_vec256 env head1 head2)
+  | Naked_vec512 head1, Naked_vec512 head2 ->
+    map_result ~f:ET.create_naked_vec512
+      (meet_head_of_kind_naked_vec512 env head1 head2)
   | Rec_info head1, Rec_info head2 ->
     map_result ~f:ET.create_rec_info
       (meet_head_of_kind_rec_info env head1 head2)
   | Region head1, Region head2 ->
     map_result ~f:ET.create_region (meet_head_of_kind_region env head1 head2)
   | ( ( Value _ | Naked_immediate _ | Naked_float _ | Naked_float32 _
-      | Naked_int32 _ | Naked_vec128 _ | Naked_int64 _ | Naked_nativeint _
+      | Naked_int32 _ | Naked_vec128 _ | Naked_vec256 _ | Naked_vec512 _ | Naked_int64 _ | Naked_nativeint _
       | Rec_info _ | Region _ ),
       _ ) ->
     assert false
@@ -820,7 +825,8 @@ and meet_head_of_kind_value_non_null env
       (element_kind1, length1, contents1, alloc_mode1)
       (element_kind2, length2, contents2, alloc_mode2)
   | ( ( Variant _ | Mutable_block _ | Boxed_float _ | Boxed_float32 _
-      | Boxed_int32 _ | Boxed_vec128 _ | Boxed_int64 _ | Boxed_nativeint _
+      | Boxed_int32 _ | Boxed_vec128 _ | Boxed_vec256 _ | Boxed_vec512 _
+      | Boxed_int64 _ | Boxed_nativeint _
       | Closures _ | String _ | Array _ ),
       _ ) ->
     (* This assumes that all the different constructors are incompatible. This
@@ -1073,11 +1079,27 @@ and meet_head_of_kind_naked_nativeint env t1 t2 =
 
 and meet_head_of_kind_naked_vec128 env t1 t2 =
   set_meet
-    (module Vec128.Set)
+    (module Vector_types.Vec128.Set)
     env
-    (t1 : TG.head_of_kind_naked_vec128 :> Vec128.Set.t)
-    (t2 : TG.head_of_kind_naked_vec128 :> Vec128.Set.t)
+    (t1 : TG.head_of_kind_naked_vec128 :> Vector_types.Vec128.Set.t)
+    (t2 : TG.head_of_kind_naked_vec128 :> Vector_types.Vec128.Set.t)
     ~of_set:TG.Head_of_kind_naked_vec128.create_non_empty_set
+
+and meet_head_of_kind_naked_vec256 env t1 t2 =
+  set_meet
+    (module Vector_types.Vec256.Set)
+    env
+    (t1 : TG.head_of_kind_naked_vec256 :> Vector_types.Vec256.Set.t)
+    (t2 : TG.head_of_kind_naked_vec256 :> Vector_types.Vec256.Set.t)
+    ~of_set:TG.Head_of_kind_naked_vec256.create_non_empty_set
+
+and meet_head_of_kind_naked_vec512 env t1 t2 =
+  set_meet
+    (module Vector_types.Vec512.Set)
+    env
+    (t1 : TG.head_of_kind_naked_vec512 :> Vector_types.Vec512.Set.t)
+    (t2 : TG.head_of_kind_naked_vec512 :> Vector_types.Vec512.Set.t)
+    ~of_set:TG.Head_of_kind_naked_vec512.create_non_empty_set
 
 and meet_head_of_kind_rec_info env _t1 _t2 =
   (* CR-someday lmaurer: This could be doing things like discovering two depth
@@ -1663,6 +1685,12 @@ and join_expanded_head env kind (expanded1 : ET.t) (expanded2 : ET.t) : ET.t =
       | Naked_vec128 head1, Naked_vec128 head2 ->
         let>+ head = join_head_of_kind_naked_vec128 env head1 head2 in
         ET.create_naked_vec128 head
+      | Naked_vec256 head1, Naked_vec256 head2 ->
+        let>+ head = join_head_of_kind_naked_vec256 env head1 head2 in
+        ET.create_naked_vec256 head
+      | Naked_vec512 head1, Naked_vec512 head2 ->
+        let>+ head = join_head_of_kind_naked_vec512 env head1 head2 in
+        ET.create_naked_vec512 head
       | Rec_info head1, Rec_info head2 ->
         let>+ head = join_head_of_kind_rec_info env head1 head2 in
         ET.create_rec_info head
@@ -1670,7 +1698,7 @@ and join_expanded_head env kind (expanded1 : ET.t) (expanded2 : ET.t) : ET.t =
         let>+ head = join_head_of_kind_region env head1 head2 in
         ET.create_region head
       | ( ( Value _ | Naked_immediate _ | Naked_float _ | Naked_float32 _
-          | Naked_int32 _ | Naked_vec128 _ | Naked_int64 _ | Naked_nativeint _
+          | Naked_int32 _ | Naked_vec128 _ | Naked_vec256 _ | Naked_vec512 _ | Naked_int64 _ | Naked_nativeint _
           | Rec_info _ | Region _ ),
           _ ) ->
         assert false
@@ -1787,7 +1815,8 @@ and join_head_of_kind_value_non_null env
     TG.Head_of_kind_value_non_null.create_array_with_contents ~element_kind
       ~length contents alloc_mode
   | ( ( Variant _ | Mutable_block _ | Boxed_float _ | Boxed_float32 _
-      | Boxed_int32 _ | Boxed_vec128 _ | Boxed_int64 _ | Boxed_nativeint _
+      | Boxed_int32 _ | Boxed_vec128 _ | Boxed_vec256 _ | Boxed_vec512 _
+      | Boxed_int64 _ | Boxed_nativeint _
       | Closures _ | String _ | Array _ ),
       _ ) ->
     Unknown
@@ -1929,6 +1958,12 @@ and join_head_of_kind_naked_nativeint _env t1 t2 : _ Or_unknown.t =
 
 and join_head_of_kind_naked_vec128 _env t1 t2 : _ Or_unknown.t =
   Known (TG.Head_of_kind_naked_vec128.union t1 t2)
+
+and join_head_of_kind_naked_vec256 _env t1 t2 : _ Or_unknown.t =
+  Known (TG.Head_of_kind_naked_vec256.union t1 t2)
+
+and join_head_of_kind_naked_vec512 _env t1 t2 : _ Or_unknown.t =
+  Known (TG.Head_of_kind_naked_vec512.union t1 t2)
 
 and join_head_of_kind_rec_info _env t1 t2 : _ Or_unknown.t =
   if Rec_info_expr.equal t1 t2 then Known t1 else Unknown

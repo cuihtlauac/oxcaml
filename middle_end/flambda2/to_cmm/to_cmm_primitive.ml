@@ -53,6 +53,8 @@ let unbox_number ~dbg kind arg =
   | Naked_float -> C.unbox_float dbg arg
   | Naked_float32 -> C.unbox_float32 dbg arg
   | Naked_vec128 -> C.unbox_vec128 dbg arg
+  | Naked_vec256 -> C.unbox_vec256 dbg arg
+  | Naked_vec512 -> C.unbox_vec512 dbg arg
   | Naked_int32 | Naked_int64 | Naked_nativeint ->
     let primitive_kind = K.Boxable_number.primitive_kind kind in
     C.unbox_int dbg primitive_kind arg
@@ -63,6 +65,8 @@ let box_number ~dbg kind alloc_mode arg =
   | Naked_float32 -> C.box_float32 dbg alloc_mode arg
   | Naked_float -> C.box_float dbg alloc_mode arg
   | Naked_vec128 -> C.box_vec128 dbg alloc_mode arg
+  | Naked_vec256 -> C.box_vec256 dbg alloc_mode arg
+  | Naked_vec512 -> C.box_vec512 dbg alloc_mode arg
   | Naked_int32 | Naked_int64 | Naked_nativeint ->
     let primitive_kind = K.Boxable_number.primitive_kind kind in
     C.box_int_gen dbg primitive_kind alloc_mode arg
@@ -102,6 +106,8 @@ let mixed_block_kinds shape =
         | Naked_int32 -> KS.naked_int32
         | Naked_int64 -> KS.naked_int64
         | Naked_vec128 -> KS.naked_vec128
+        | Naked_vec256 -> KS.naked_vec256
+        | Naked_vec512 -> KS.naked_vec512
         | Naked_nativeint -> KS.naked_nativeint)
       (Array.to_list (K.Mixed_block_shape.flat_suffix shape))
   in
@@ -131,6 +137,8 @@ let memory_chunk_of_flat_suffix_element :
   | Naked_float32 -> Single { reg = Float32 }
   | Naked_int32 -> Thirtytwo_signed
   | Naked_vec128 -> Onetwentyeight_unaligned
+  | Naked_vec256 -> Twofiftysix_unaligned
+  | Naked_vec512 -> Fivetwelve_unaligned
   | Naked_int64 | Naked_nativeint -> Word_int
 
 let block_load ~dbg (kind : P.Block_access_kind.t) (mutability : Mutability.t)

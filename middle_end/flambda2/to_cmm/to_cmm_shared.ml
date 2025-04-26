@@ -60,6 +60,8 @@ let exttype_of_kind (k : Flambda_kind.t) : Cmm.exttype =
     | Thirty_two -> XInt32
     | Sixty_four -> XInt64)
   | Naked_number Naked_vec128 -> XVec128
+  | Naked_number Naked_vec256 -> XVec256
+  | Naked_number Naked_vec512 -> XVec512
   | Region -> Misc.fatal_error "[Region] kind not expected here"
   | Rec_info -> Misc.fatal_error "[Rec_info] kind not expected here"
 
@@ -77,6 +79,8 @@ let machtype_of_kind (kind : Flambda_kind.With_subkind.t) =
   | Naked_number Naked_float -> Cmm.typ_float
   | Naked_number Naked_float32 -> Cmm.typ_float32
   | Naked_number Naked_vec128 -> Cmm.typ_vec128
+  | Naked_number Naked_vec256 -> Cmm.typ_vec256
+  | Naked_number Naked_vec512 -> Cmm.typ_vec512
   | Naked_number (Naked_immediate | Naked_int32 | Naked_int64 | Naked_nativeint)
     ->
     Cmm.typ_int
@@ -97,6 +101,8 @@ let extended_machtype_of_kind (kind : Flambda_kind.With_subkind.t) =
   | Naked_number Naked_float -> Extended_machtype.typ_float
   | Naked_number Naked_float32 -> Extended_machtype.typ_float32
   | Naked_number Naked_vec128 -> Extended_machtype.typ_vec128
+  | Naked_number Naked_vec256 -> Extended_machtype.typ_vec256
+  | Naked_number Naked_vec512 -> Extended_machtype.typ_vec512
   | Naked_number (Naked_immediate | Naked_int32 | Naked_int64 | Naked_nativeint)
     ->
     Extended_machtype.typ_any_int
@@ -125,6 +131,14 @@ let memory_chunk_of_kind (kind : Flambda_kind.With_subkind.t) : Cmm.memory_chunk
     (* 128-bit memory operations are default unaligned. Aligned (big)array
        operations are handled separately via cmm. *)
     Onetwentyeight_unaligned
+  | Naked_number Naked_vec256 ->
+    (* 256-bit memory operations are default unaligned. Aligned (big)array
+       operations are handled separately via cmm. *)
+    Twofiftysix_unaligned
+  | Naked_number Naked_vec512 ->
+    (* 512-bit memory operations are default unaligned. Aligned (big)array
+       operations are handled separately via cmm. *)
+    Fivetwelve_unaligned
   | Region | Rec_info ->
     Misc.fatal_errorf "Bad kind %a for [memory_chunk_of_kind]"
       Flambda_kind.With_subkind.print kind
@@ -186,6 +200,16 @@ let const ~dbg cst =
       Vector_types.Vec128.Bit_pattern.to_bits i
     in
     vec128 ~dbg { high; low }
+  | Naked_vec256 i ->
+    let { Vector_types.Vec256.Bit_pattern.high; low } =
+      Vector_types.Vec256.Bit_pattern.to_bits i
+    in
+    vec256 ~dbg { high; low }
+  | Naked_vec512 i ->
+    let { Vector_types.Vec512.Bit_pattern.high; low } =
+      Vector_types.Vec512.Bit_pattern.to_bits i
+    in
+    vec512 ~dbg { high; low }
   | Naked_nativeint t -> targetint ~dbg t
   | Null -> targetint ~dbg Targetint_32_64.zero
 
@@ -238,6 +262,16 @@ let const_static cst : Cmm.data_item list =
       Vector_types.Vec128.Bit_pattern.to_bits v
     in
     [cvec128 { high; low }]
+  | Naked_vec256 v ->
+    let { Vector_types.Vec256.Bit_pattern.high; low } =
+      Vector_types.Vec256.Bit_pattern.to_bits v
+    in
+    [cvec256 { high; low }]
+  | Naked_vec512 v ->
+    let { Vector_types.Vec512.Bit_pattern.high; low } =
+      Vector_types.Vec512.Bit_pattern.to_bits v
+    in
+    [cvec512 { high; low }]
   | Null -> [cint 0n]
 
 let simple_static res s =
@@ -316,6 +350,8 @@ module Update_kind = struct
     | Naked_float
     | Naked_float32
     | Naked_vec128
+    | Naked_vec256
+    | Naked_vec512
 
   (* The [stride] is the number of bytes by which an [index] supplied to
      [make_update], below, needs to be multiplied to get the byte offset into
@@ -338,6 +374,8 @@ module Update_kind = struct
     | Naked_float32 ->
       1
     | Naked_vec128 -> 2
+    | Naked_vec256 -> 4
+    | Naked_vec512 -> 8
 
   let pointers = { kind = Pointer; stride = Arch.size_addr }
 
@@ -352,12 +390,20 @@ module Update_kind = struct
   let naked_float32s = { kind = Naked_float32; stride = 4 }
 
   let naked_vec128s = { kind = Naked_vec128; stride = 16 }
+  
+  let naked_vec256s = { kind = Naked_vec256; stride = 32 }
+  
+  let naked_vec512s = { kind = Naked_vec512; stride = 64 }
 
   let naked_int32_fields = { kind = Naked_int32; stride = Arch.size_addr }
 
   let naked_float32_fields = { kind = Naked_float32; stride = Arch.size_addr }
 
   let naked_vec128_fields = { kind = Naked_vec128; stride = Arch.size_addr }
+  
+  let naked_vec256_fields = { kind = Naked_vec256; stride = Arch.size_addr }
+  
+  let naked_vec512_fields = { kind = Naked_vec512; stride = Arch.size_addr }
 end
 
 let make_update env res dbg ({ kind; stride } : Update_kind.t) ~symbol var
@@ -378,6 +424,7 @@ let make_update env res dbg ({ kind; stride } : Update_kind.t) ~symbol var
           (* See [caml_initialize]; we can avoid this function in this case. *)
           None
         | Naked_int32 | Naked_int64 | Naked_float | Naked_float32 | Naked_vec128
+        | Naked_vec256 | Naked_vec512
           ->
           (* The GC never sees these fields, so we can avoid using
              [caml_initialize]. This is important as it significantly reduces
@@ -409,6 +456,8 @@ let make_update env res dbg ({ kind; stride } : Update_kind.t) ~symbol var
              build reproducibility. *)
           Single { reg = Float32 }
         | Naked_vec128 -> Onetwentyeight_unaligned
+        | Naked_vec256 -> Twofiftysix_unaligned
+        | Naked_vec512 -> Fivetwelve_unaligned
       in
       let addr = strided_field_address symbol ~stride ~index dbg in
       store ~dbg memory_chunk Initialization ~addr ~new_value:cmm

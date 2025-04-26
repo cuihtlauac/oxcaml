@@ -84,7 +84,11 @@ let types_are_compatible (left : Reg.t)  (right : Reg.t) =
   | Float32, Float32
   | (Valx2 | Vec128), (Valx2 | Vec128) ->
     true
-  | (Int | Val | Addr | Float | Float32 | Vec128 | Valx2), _ -> false
+  | Vec256, Vec256 ->
+    true
+  | Vec512, Vec512 ->
+    true
+  | (Int | Val | Addr | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2), _ -> false
 
 (* Representation of hard registers by pseudo-registers *)
 
@@ -99,17 +103,22 @@ let hard_float_reg =
   v
 
 let hard_vec128_reg = Array.map (fun r -> {r with Reg.typ = Vec128}) hard_float_reg
+let hard_vec256_reg = Array.map (fun r -> {r with Reg.typ = Vec256}) hard_float_reg
+let hard_vec512_reg = Array.map (fun r -> {r with Reg.typ = Vec512}) hard_float_reg
 let hard_float32_reg = Array.map (fun r -> {r with Reg.typ = Float32}) hard_float_reg
 
 let all_phys_regs =
-  Array.concat [hard_int_reg; hard_float_reg; hard_float32_reg; hard_vec128_reg]
+  Array.concat [hard_int_reg; hard_float_reg; hard_float32_reg; hard_vec128_reg; hard_vec256_reg; hard_vec512_reg]
 
 let phys_reg ty n =
   match (ty : machtype_component) with
   | Int | Addr | Val -> hard_int_reg.(n)
   | Float -> hard_float_reg.(n - 100)
   | Float32 -> hard_float32_reg.(n - 100)
-  | Vec128 | Valx2 -> hard_vec128_reg.(n - 100)
+  | Vec128 -> hard_vec128_reg.(n - 100)
+  | Vec256 -> hard_vec256_reg.(n - 100)
+  | Vec512 -> hard_vec512_reg.(n - 100)
+  | Valx2 -> hard_vec128_reg.(n - 100)
 
 let rax = phys_reg Int 0
 let rdi = phys_reg Int 2
@@ -121,7 +130,8 @@ let rbp = phys_reg Int 12
 
 (* CSE needs to know that all versions of xmm15 are destroyed. *)
 let destroy_xmm n =
-  [| phys_reg Float (100 + n); phys_reg Float32 (100 + n); phys_reg Vec128 (100 + n) |]
+  [| phys_reg Float (100 + n); phys_reg Float32 (100 + n); 
+     phys_reg Vec128 (100 + n); phys_reg Vec256 (100 + n); phys_reg Vec512 (100 + n) |]
 
 let destroyed_by_plt_stub =
   if not X86_proc.use_plt then [| |] else [| r10; r11 |]
@@ -178,6 +188,24 @@ let calling_conventions
         ofs := Misc.align !ofs 16;
         loc.(i) <- stack_slot (make_stack !ofs) Vec128;
         ofs := !ofs + size_vec128
+      end
+    | Vec256 ->
+      if !float <= last_float then begin
+        loc.(i) <- phys_reg Vec256 !float;
+        incr float
+      end else begin
+        ofs := Misc.align !ofs 32;
+        loc.(i) <- stack_slot (make_stack !ofs) Vec256;
+        ofs := !ofs + 32 (* 256 bits = 32 bytes *)
+      end
+    | Vec512 ->
+      if !float <= last_float then begin
+        loc.(i) <- phys_reg Vec512 !float;
+        incr float
+      end else begin
+        ofs := Misc.align !ofs 64;
+        loc.(i) <- stack_slot (make_stack !ofs) Vec512;
+        ofs := !ofs + 64 (* 512 bits = 64 bytes *)
       end
     | Valx2 ->
       Misc.fatal_error "Unexpected machtype_component Valx2"
@@ -329,7 +357,7 @@ let win64_loc_external_arguments arg =
           (* float32 slots still take up a full word *)
           ofs := !ofs + size_float
         end
-    | Vec128 ->
+    | Vec128 | Vec256 | Vec512 ->
         (* CR mslater: (SIMD) win64 calling convention requires pass by reference *)
         Misc.fatal_error "SIMD external arguments are not supported on Win64"
     | Valx2 ->
@@ -469,9 +497,9 @@ let destroyed_at_basic (basic : Cfg_intf.S.basic) =
   | Op(Specific (Ifloatarithmem (Float32, _, _)))
   | Op(Intop_atomic _) ->
     destroyed_at_small_memory_op
-  | Op(Store( (Word_int | Word_val | Double | Onetwentyeight_aligned | Onetwentyeight_unaligned ), _, _))
+  | Op(Store( (Word_int | Word_val | Double | Onetwentyeight_aligned | Onetwentyeight_unaligned | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned | Fivetwelve_unaligned), _, _))
   | Op(Load { memory_chunk =
-                (Word_int | Word_val | Double | Onetwentyeight_aligned | Onetwentyeight_unaligned ); _})
+                (Word_int | Word_val | Double | Onetwentyeight_aligned | Onetwentyeight_unaligned | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned | Fivetwelve_unaligned); _})
   | Op(Specific (Istore_int _))
   | Op(Specific (Ifloatarithmem (Float64, _, _)))
   | Op(Specific (Iprefetch _ | Icldemote _)) ->
@@ -490,7 +518,7 @@ let destroyed_at_basic (basic : Cfg_intf.S.basic) =
     destroyed_by_simd_mem_op op
   | Op (Move | Spill | Reload
        | Const_int _ | Const_float _ | Const_float32 _ | Const_symbol _
-       | Const_vec128 _
+       | Const_vec128 _ | Const_vec256 _ | Const_vec512 _
        | Stackoffset _
        | Intop (Iadd | Isub | Imul | Iand | Ior | Ixor | Ilsl | Ilsr
                | Iasr | Ipopcnt | Iclz _ | Ictz _)

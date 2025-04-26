@@ -13,10 +13,12 @@ let equal_data_type left right =
   | DWORD, DWORD
   | QWORD, QWORD
   | VEC128, VEC128
+  | VEC256, VEC256
+  | VEC512, VEC512
   | NEAR, NEAR
   | PROC, PROC ->
     true
-  | (NONE | REAL4 | REAL8 | BYTE | WORD | DWORD | QWORD | VEC128 | NEAR | PROC), _ ->
+  | (NONE | REAL4 | REAL8 | BYTE | WORD | DWORD | QWORD | VEC128 | VEC256 | VEC512 | NEAR | PROC), _ ->
     false
 
 let equal_reg64 left right =

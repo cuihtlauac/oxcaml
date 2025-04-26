@@ -1105,8 +1105,11 @@ let unbox_vec128 dbg =
       c
     | Cconst_symbol (s, _dbg) as cmm -> (
       match Cmmgen_state.structured_constant_of_sym s.sym_name with
-      | Some (Const_vec128 { low; high }) ->
-        Cconst_vec128 ({ low; high }, dbg) (* or keep _dbg? *)
+      | Some (Const_vec128 vec128_bits) ->
+        (* Need to build a vec128_bits record by extracting fields *)
+        let extracted_bits = { Cmm.word0 = vec128_bits.Cmmgen_state.low; 
+                               word1 = vec128_bits.Cmmgen_state.high } in
+        Cconst_vec128 (extracted_bits, dbg) (* or keep _dbg? *)
       | _ -> Cop (mk_load_immut Onetwentyeight_unaligned, [cmm], dbg))
     | cmm -> Cop (mk_load_immut Onetwentyeight_unaligned, [cmm], dbg))
 

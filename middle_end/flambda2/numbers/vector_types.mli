@@ -34,4 +34,81 @@ module Vec128 : sig
 
     val of_bits : bits -> t
   end
+  
+  module Set : sig
+    include Set.S with type elt = Bit_pattern.t
+    
+    val print : Format.formatter -> t -> unit
+    
+    val to_string : t -> string
+    
+    val union_list : t list -> t
+    
+    val get_singleton : t -> elt option
+  end
+end
+
+module Vec256 : sig
+  module Bit_pattern : sig
+    (** 256-bit value whose comparison and equality relations are lexicographically
+      ordered by bit pattern. *)
+
+    include Container_types.S
+
+    val zero : t
+
+    type bits =
+      { highest : int64;
+        high : int64;
+        low : int64;
+        lowest : int64
+      }
+
+    val to_bits : t -> bits
+
+    val of_bits : bits -> t
+  end
+  
+  module Set : sig
+    include Set.S with type elt = Bit_pattern.t
+    
+    val print : Format.formatter -> t -> unit
+    
+    val to_string : t -> string
+    
+    val union_list : t list -> t
+    
+    val get_singleton : t -> elt option
+  end
+end
+
+module Vec512 : sig
+  module Bit_pattern : sig
+    (** 512-bit value whose comparison and equality relations are lexicographically
+      ordered by bit pattern. *)
+
+    include Container_types.S
+
+    val zero : t
+
+    type bits =
+      { part7 : int64; part6 : int64; part5 : int64; part4 : int64;
+        part3 : int64; part2 : int64; part1 : int64; part0 : int64 }
+
+    val to_bits : t -> bits
+
+    val of_bits : bits -> t
+  end
+  
+  module Set : sig
+    include Set.S with type elt = Bit_pattern.t
+    
+    val print : Format.formatter -> t -> unit
+    
+    val to_string : t -> string
+    
+    val union_list : t list -> t
+    
+    val get_singleton : t -> elt option
+  end
 end

@@ -52,12 +52,12 @@ module T = struct
     (* If the ID doesn't match the type, the array access will raise. *)
     match (ty : Cmm.machtype_component) with
     | Int | Addr | Val -> int_reg_name.(r - first_available_register Int64)
-    | Float | Float32 | Vec128 | Valx2 ->
+    | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2 ->
       float_reg_name.(r - first_available_register Float128)
 
   let of_machtype : Cmm.machtype_component -> t = function
     | Val | Int | Addr -> Int64
-    | Float | Float32 | Vec128 | Valx2 -> Float128
+    | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2 -> Float128
 
   let gc_regs_offset (typ : Cmm.machtype_component) (reg_index : int) =
     (* Given register with type [typ] and index [reg_index], return the offset

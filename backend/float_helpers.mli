@@ -2,10 +2,10 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*            Mark Shinwell and Xavier Clerc, Jane Street Europe          *)
-(*                       Guillaume Bury, OCamlPro SAS                     *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
 (*                                                                        *)
-(*   Copyright 2017--2023 Jane Street Group LLC                           *)
+(*   Copyright 2023 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,23 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type t =
-  | Values_or_immediates_or_naked_floats  (** Traditional OCaml arrays. *)
-  | Unboxed_products
-  | Naked_float32s
-  | Naked_int32s
-  | Naked_int64s
-  | Naked_nativeints
-  | Naked_vec128s
-  | Naked_vec256s
-  | Naked_vec512s
-      (** Arrays of unboxed numbers, with a slightly different runtime
-          representation. *)
+(* Shared types to help break dependency cycles *)
 
-val print : Format.formatter -> t -> unit
+(* Float width type, shared between multiple modules *)
+type float_width =
+  | Float64
+  | Float32
 
-val compare : t -> t -> int
-
-val of_element_kind : Flambda_kind.t -> t
-
-val of_lambda : Lambda.array_kind -> t
+val equal_float_width : float_width -> float_width -> bool

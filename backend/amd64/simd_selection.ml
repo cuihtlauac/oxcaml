@@ -49,6 +49,8 @@ let extract_constant args name ~max =
       | Cconst_natint (_, _)
       | Cconst_float32 (_, _)
       | Cconst_vec128 (_, _)
+      | Cconst_vec256 (_, _)
+      | Cconst_vec512 (_, _)
       | Cconst_symbol (_, _)
       | Cvar _
       | Clet (_, _, _)
@@ -571,7 +573,7 @@ let vectorize_operation (width_type : Vectorize_utils.Width_in_bits.t)
             (Int64.logand num mask))
         0L nums
     in
-    Operation.Const_vec128 { high = pack_int64 highs; low = pack_int64 lows }
+    Operation.Const_vec128 { word1 = pack_int64 highs; word0 = pack_int64 lows }
     |> make_default ~arg_count:0 ~res_count:1
   in
   let add_op =

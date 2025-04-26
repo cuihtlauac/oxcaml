@@ -131,7 +131,7 @@ let float_reg_name = Array.init 16 (fun i -> X86_ast.XMM i)
 let register_name typ r : X86_ast.arg =
   match (typ : Cmm.machtype_component) with
   | Int | Val | Addr -> Reg64 int_reg_name.(r)
-  | Float | Float32 | Vec128 | Valx2 -> Regf float_reg_name.(r - 100)
+  | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2 -> Regf float_reg_name.(r - 100)
 
 let phys_rax = phys_reg Int 0
 
@@ -361,6 +361,8 @@ let x86_data_type_for_stack_slot : Cmm.machtype_component -> X86_ast.data_type =
   function
   | Float -> REAL8
   | Vec128 -> VEC128
+  | Vec256 -> VEC256
+  | Vec512 -> VEC512
   | Valx2 -> VEC128
   | Int | Addr | Val -> QWORD
   | Float32 -> REAL4
@@ -456,7 +458,7 @@ let record_frame_label live dbg =
         Misc.fatal_errorf "bad GC root %a" Printreg.reg r
       | { typ = Val | Valx2; loc = Unknown; _ } as r ->
         Misc.fatal_errorf "Unknown location %a" Printreg.reg r
-      | { typ = Int | Float | Float32 | Vec128; _ } -> ())
+      | { typ = Int | Float | Float32 | Vec128 | Vec256 | Vec512; _ } -> ())
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size ())
     ~live_offset:!live_offset dbg;
@@ -917,11 +919,11 @@ let add_vec128_constant bits =
     vec128_constants := (bits, lbl) :: !vec128_constants;
     lbl
 
-let emit_vec128_constant ({ high; low } : Cmm.vec128_bits) lbl =
+let emit_vec128_constant ({ word0; word1 } : Cmm.vec128_bits) lbl =
   (* SIMD vectors respect little-endian byte order *)
   _label (emit_label lbl);
-  D.qword (Const low);
-  D.qword (Const high)
+  D.qword (Const word0);
+  D.qword (Const word1)
 
 let global_maybe_protected sym =
   D.global sym;
@@ -1600,12 +1602,12 @@ let emit_instr ~first ~fallthrough i =
     | _ ->
       let lbl = add_float_constant f in
       I.movsd (mem64_rip REAL8 (emit_label lbl)) (res i 0))
-  | Lop (Const_vec128 { high; low }) -> (
-    match high, low with
+  | Lop (Const_vec128 { word0; word1 }) -> (
+    match word0, word1 with
     | 0x0000_0000_0000_0000L, 0x0000_0000_0000_0000L ->
       I.xorpd (res i 0) (res i 0)
     | _ ->
-      let lbl = add_vec128_constant { high; low } in
+      let lbl = add_vec128_constant { word0; word1 } in
       I.movapd (mem64_rip VEC128 (emit_label lbl)) (res i 0))
   | Lop (Const_symbol s) ->
     add_used_symbol s.sym_name;
@@ -2220,9 +2222,9 @@ let emit_item : Cmm.data_item -> unit = function
   | Csingle f -> D.long (Const (Int64.of_int32 (Int32.bits_of_float f)))
   | Cdouble f -> D.qword (Const (Int64.bits_of_float f))
   (* SIMD vectors respect little-endian byte order *)
-  | Cvec128 { high; low } ->
-    D.qword (Const low);
-    D.qword (Const high)
+  | Cvec128 { word0; word1 } ->
+    D.qword (Const word0);
+    D.qword (Const word1)
   | Csymbol_address s ->
     add_used_symbol s.sym_name;
     D.qword (ConstLabel (emit_cmm_symbol s))

@@ -25,6 +25,8 @@ module Naked_number_kind : sig
     | Naked_int64
     | Naked_nativeint
     | Naked_vec128
+    | Naked_vec256
+    | Naked_vec512
 
   val print : Format.formatter -> t -> unit
 
@@ -63,6 +65,8 @@ val naked_int64 : t
 val naked_nativeint : t
 
 val naked_vec128 : t
+val naked_vec256 : t
+val naked_vec512 : t
 
 val region : t
 
@@ -83,6 +87,8 @@ type flat_suffix_element = private
   | Naked_int64
   | Naked_nativeint
   | Naked_vec128
+  | Naked_vec256
+  | Naked_vec512
 
 module Mixed_block_shape : sig
   type t
@@ -164,6 +170,8 @@ module Boxable_number : sig
     | Naked_int64
     | Naked_nativeint
     | Naked_vec128
+    | Naked_vec256
+    | Naked_vec512
 
   val unboxed_kind : t -> kind
 
@@ -197,6 +205,8 @@ module With_subkind : sig
       | Boxed_int64
       | Boxed_nativeint
       | Boxed_vec128
+      | Boxed_vec256
+      | Boxed_vec512
       | Tagged_immediate
       | Variant of
           { consts : Targetint_31_63.Set.t;
@@ -212,6 +222,8 @@ module With_subkind : sig
       | Unboxed_int64_array
       | Unboxed_nativeint_array
       | Unboxed_vec128_array
+      | Unboxed_vec256_array
+      | Unboxed_vec512_array
       | Unboxed_product_array
 
     include Container_types.S with type t := t
@@ -249,6 +261,10 @@ module With_subkind : sig
   val naked_nativeint : t
 
   val naked_vec128 : t
+  
+  val naked_vec256 : t
+  
+  val naked_vec512 : t
 
   val region : t
 

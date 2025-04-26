@@ -76,4 +76,96 @@ module Vec128 = struct
 
     let of_bits { high; low } = of_int64_array [| high; low |]
   end
+  
+  module Set = struct
+    include Set.Make(Bit_pattern)
+    
+    let print ppf s =
+      Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
+      
+    let to_string s =
+      Printf.sprintf "<vec set with %d elements>" (cardinal s)
+      
+    let union_list sets =
+      List.fold_left union empty sets
+      
+    let get_singleton s =
+      if cardinal s = 1 then Some (choose s) else None
+  end
+end
+
+module Vec256 = struct
+  module Bit_pattern = struct
+    include Vector_by_bit_pattern (struct
+      let size_in_int64s = 4
+    end)
+
+    type bits =
+      { highest : int64;
+        high : int64;
+        low : int64;
+        lowest : int64
+      }
+
+    let to_bits t =
+      match to_int64_array t with
+      | [| highest; high; low; lowest |] -> { highest; high; low; lowest }
+      | _ -> Misc.fatal_error "Vec256.to_bits: wrong size vector"
+
+    let of_bits { highest; high; low; lowest } = 
+      of_int64_array [| highest; high; low; lowest |]
+  end
+  
+  module Set = struct
+    include Set.Make(Bit_pattern)
+    
+    let print ppf s =
+      Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
+      
+    let to_string s =
+      Printf.sprintf "<vec set with %d elements>" (cardinal s)
+      
+    let union_list sets =
+      List.fold_left union empty sets
+      
+    let get_singleton s =
+      if cardinal s = 1 then Some (choose s) else None
+  end
+end
+
+module Vec512 = struct
+  module Bit_pattern = struct
+    include Vector_by_bit_pattern (struct
+      let size_in_int64s = 8
+    end)
+
+    type bits =
+      { part7 : int64; part6 : int64; part5 : int64; part4 : int64;
+        part3 : int64; part2 : int64; part1 : int64; part0 : int64 }
+
+    let to_bits t =
+      match to_int64_array t with
+      | [| part7; part6; part5; part4; part3; part2; part1; part0 |] -> 
+          { part7; part6; part5; part4; part3; part2; part1; part0 }
+      | _ -> Misc.fatal_error "Vec512.to_bits: wrong size vector"
+
+    let of_bits { part7; part6; part5; part4; part3; part2; part1; part0 } = 
+      of_int64_array [| part7; part6; part5; part4; part3; part2; part1; part0 |]
+  end
+  
+  module Set = struct
+    include Set.Make(Bit_pattern)
+    
+    let print ppf s =
+      Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
+      
+    let to_string s =
+      Printf.sprintf "<vec set with %d elements>" (cardinal s)
+      
+    let union_list sets =
+      List.fold_left union empty sets
+      
+    let get_singleton s =
+      if cardinal s = 1 then Some (choose s) else None
+  end
 end
