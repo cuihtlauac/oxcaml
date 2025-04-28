@@ -765,8 +765,6 @@ module With_bounds = struct
           type_exprs)
 end
 
-(* Forward declarations *)
-
 module Layout_and_axes = struct
   module Allow_disallow = Allowance.Magic_allow_disallow (struct
     type (_, 'layout, 'd) sided = ('layout, 'd) layout_and_axes

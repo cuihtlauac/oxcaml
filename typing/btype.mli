@@ -138,9 +138,6 @@ val fold_type_expr: ('a -> type_expr -> 'a) -> 'a -> type_expr -> 'a
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
 val fold_row: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a
-val iter_row_fields: (type_expr -> unit) -> row_desc -> unit
-        (* Iteration on fields in a row, excluding row variable *)
-val fold_row_fields: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 val iter_type_expr_kind: (type_expr -> unit) -> (type_decl_kind -> unit)
