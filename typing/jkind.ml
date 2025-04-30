@@ -2364,7 +2364,7 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
       let cstr_arg_tys =
         match cstr.cd_res with
         | None -> cstr_arg_tys
-        | Some res -> (
+        | Some res ->
           let res_args =
             match Types.get_desc res with
             | Tconstr (_, args, _) -> args
@@ -2432,16 +2432,7 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
           in
           if Misc.Stdlib.List.is_empty params
           then cstr_arg_tys
-          else
-            match
-              type_apply args
-                (Btype.newgenty
-                   (Ttuple (List.map (fun ty -> None, ty) cstr_arg_tys)))
-                params
-              |> Types.get_desc
-            with
-            | Ttuple args -> List.map snd args
-            | _ -> assert false)
+          else List.map (fun ty -> type_apply args ty params) cstr_arg_tys
       in
       List.fold_left2
         (fun jkind type_expr modality ->
