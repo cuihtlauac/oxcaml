@@ -2410,12 +2410,12 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
                      See Step 2a from Note [With-bounds for GADTs] *)
                   ret_args, params, seen
                 else
-                  match Types.get_desc arg, Types.get_desc param with
-                  | Tvar _, Tvar _ ->
+                  match Types.get_desc arg with
+                  | Tvar _ ->
                     (* Only add types which are direct variables. Note that types
                        which aren't variables might themselves /contain/ variables; if
                        those variables don't show up on another parameter, they're
-                       treated as existentials. See step 2b from Note [With-bounds for
+                       treated as orphaned. See step 2b from Note [With-bounds for
                        GADTs] *)
                     arg :: ret_args, param :: params, Btype.TypeSet.add arg seen
                   | _ -> ret_args, params, seen)
