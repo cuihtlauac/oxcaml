@@ -577,16 +577,33 @@ type 'a exist_row3 =
     Mk : 'a -> ([> `A | `B of int ref ] as 'a) option exist_row3
 |}]
 
-type show_me_the_kind : immediate = exist_row2
+type 'a show_me_the_kind : immediate = 'a option exist_row3
 [%%expect{|
-Line 1, characters 0-46:
-1 | type show_me_the_kind : immediate = exist_row2
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The kind of type "exist_row2" is immutable_data
+Line 1, characters 0-59:
+1 | type 'a show_me_the_kind : immediate = 'a option exist_row3
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The kind of type "'a option exist_row3" is immutable_data
          with [> `A | `B of int ref ]
-         because of the definition of exist_row2 at line 1, characters 0-67.
-       But the kind of type "exist_row2" must be a subkind of immediate
-         because of the definition of show_me_the_kind at line 1, characters 0-46.
+         because of the definition of exist_row3 at line 1, characters 0-80.
+       But the kind of type "'a option exist_row3" must be a subkind of
+         immediate
+         because of the definition of show_me_the_kind at line 1, characters 0-59.
+|}]
+
+let foo (x : [`A | `B of int ref] option exist_row3 @ contended) = use_uncontended x
+[%%expect{|
+Line 1, characters 83-84:
+1 | let foo (x : [`A | `B of int ref] option exist_row3 @ contended) = use_uncontended x
+                                                                                       ^
+Error: This value is "contended" but expected to be "uncontended".
+|}]
+
+let foo (x : [`A | `B of int ref] option exist_row3 @ nonportable) = use_portable x
+[%%expect{|
+Line 1, characters 82-83:
+1 | let foo (x : [`A | `B of int ref] option exist_row3 @ nonportable) = use_portable x
+                                                                                      ^
+Error: This value is "nonportable" but expected to be "portable".
 |}]
 
 (* In the future, maybe local equations will let us figure out that something mode crosses
