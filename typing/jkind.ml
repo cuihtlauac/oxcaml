@@ -2390,15 +2390,9 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
             List.map
               (fun ty ->
                 match get_desc ty with
-                | Tof_kind _ ->
-                  (* We shouldn't be able to hit this, but it's harmless and
-                     defensive to just keep these types the same. *)
-                  ty
-                | Tvar { jkind; _ } | Tunivar { jkind; _ } ->
-                  Btype.newgenty (Tof_kind jkind)
+                | Tvar { jkind; _ } -> Btype.newgenty (Tof_kind jkind)
                 | _ ->
-                  Misc.fatal_error
-                    "orphanes_type_vars must contain only Tvar or Tunivar")
+                  Misc.fatal_error "orphanes_type_vars must contain only Tvar")
               orphaned_type_vars
           in
           let args, params, _seen =
