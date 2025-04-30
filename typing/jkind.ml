@@ -2315,7 +2315,7 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
        omit all other possible instantiations. That means that in the above type, we'll
        substitute ['x] for both instances of ['a] and infer a kind of [immutable_data with
        'x]. This is sound, but somewhat restrictive; in a perfect world, we'd infer a kind
-       of [immutable_data with ('x OR 'y)], but that breaks type inference. At some point
+       of [immutable_data with ('x OR 'y)], but that goes beyond what with-bounds can describe (which, if we implemented it, would introduce a disjunction in type inference, requiring backtracking). At some point
        in the future, we should at least change the subsumption algorithm to accept either
        [immutable_data with 'x] or [immutable_data with 'y] (* CR layouts v2.8: do that *)
 
