@@ -33,9 +33,6 @@ open Allowance
    * It is very easy to search for and replace when we have a better name.
 *)
 
-val constructor_unbound_type_vars_excluding_row_variables :
-  (Types.constructor_declaration -> Btype.TypeSet.t) ref
-
 (* The externality mode. This tracks whether or not an expression is external
    to the type checker; something external to the type checker can be skipped
    during garbage collection.
@@ -509,6 +506,7 @@ val for_boxed_variant :
     Types.type_expr ->
     Types.type_expr list ->
     Types.type_expr) ->
+  free_vars:(Types.type_expr -> Types.type_expr list) ->
   Types.constructor_declaration list ->
   Types.jkind_l
 

@@ -29,9 +29,6 @@ let raw_type_expr : (Format.formatter -> type_expr -> unit) ref =
 
 let set_raw_type_expr p = raw_type_expr := p
 
-let constructor_unbound_type_vars_excluding_row_variables =
-  ref (fun _ -> assert false)
-
 module Nonempty_list = Misc.Nonempty_list
 
 (* A *sort* is the information the middle/back ends need to be able to
@@ -2262,7 +2259,7 @@ let for_unboxed_record lbls =
   in
   Builtin.product ~why:Unboxed_record tys_modalities layouts
 
-let for_boxed_variant ~decl_params ~type_apply cstrs =
+let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
   let open Types in
   if List.for_all
        (fun cstr ->
@@ -2329,17 +2326,17 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
          type 'a t : A : 'a -> 'a option t
        ]}
 
-       we just treat it as if it was existential (see [2c]); this is notably different
-       than what [Datarepr.constructor_existentials] considers to be an existential type
-       variable.
+       we treat it as if it was existential (see [2c]); we consider these variables -
+       those which are either existential (not mentioned at all in the result type of the
+       constructor) or only mentioned under another type expression in the result type of
+       a constructor "orphaned" type variables.
 
-       2c. We replace all existential type variables (including those that appear in the
-       return type, but only nested under some other type), except for row variables, with
-       a [Tof_kind] representing the kind of those existential type variables. Since those
-       have best kinds, they'll just get normalized away during normalization, except in
-       the case that they show up as an argument to a type constructor representing an
-       abstract type - in which case, they still end up in the (fully normalized)
-       with-bounds.
+       2c. We replace all "orphaned" type variables (see the last paragraph of 2a, above)
+       with a [Tof_kind] representing the kind of those existential type variables. Since
+       those have best kinds, they'll just get normalized away during normalization,
+       except in the case that they show up as an argument to a type constructor
+       representing an abstract type - in which case, they still end up in the (fully
+       normalized) with-bounds.
 
        3. Take the substituted argument types and modalities and add them to the
        with-bounds for the overall variant.
@@ -2401,13 +2398,38 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
               ( `Args (decl_params @ ret_args),
                 `Params (decl_params @ params),
                 seen )
-            | Some res -> (
+            | Some res ->
+              let res_args =
+                match Types.get_desc res with
+                | Tconstr (_, args, _) -> args
+                | _ -> Misc.fatal_error "cd_res must be Tconstr"
+              in
               (* Gather "existentials" (including types which are only bound because
                  they're under another type expression) for the constructor.
 
                  See step 2b and 2c from Note [With-bounds for GADTs] *)
-              let existentials =
-                !constructor_unbound_type_vars_excluding_row_variables cstr
+              let arg_vars =
+                match cstr.cd_args with
+                | Cstr_tuple tl ->
+                  Seq.concat_map
+                    (fun ca -> free_vars ca.ca_type |> List.to_seq)
+                    (List.to_seq tl)
+                | Cstr_record lbls ->
+                  Seq.concat_map
+                    (fun lbl -> free_vars lbl.ld_type |> List.to_seq)
+                    (List.to_seq lbls)
+              in
+              let res_arg_set =
+                res_args |> List.to_seq
+                |> Seq.map Types.Transient_expr.repr
+                |> Btype.TypeSet.of_seq
+              in
+              let orphaned_type_vars =
+                Btype.TypeSet.diff
+                  (arg_vars
+                  |> Seq.map Types.Transient_expr.repr
+                  |> Btype.TypeSet.of_seq)
+                  res_arg_set
                 |> Btype.TypeSet.to_seq
                 |> Seq.map Types.Transient_expr.type_expr
                 |> List.of_seq
@@ -2424,36 +2446,32 @@ let for_boxed_variant ~decl_params ~type_apply cstrs =
                       Btype.newgenty (Tof_kind jkind)
                     | _ ->
                       Misc.fatal_error
-                        "constructor_unbound_type_vars must return Tvar or \
-                         Tunivar")
-                  existentials
+                        "orphanes_type_vars must contain only Tvar or Tunivar")
+                  orphaned_type_vars
               in
-              match Types.get_desc res with
-              | Tconstr (_, args, _) ->
-                List.fold_left2
-                  (fun (`Args ret_args, `Params params, seen) arg param ->
-                    if Btype.TypeSet.mem arg seen
-                    then
-                      (* We've already seen this type parameter, so don't add it again.
-                         See Step 2a from Note [With-bounds for GADTs] *)
-                      `Args ret_args, `Params params, seen
-                    else
-                      match Types.get_desc arg, Types.get_desc param with
-                      | Tvar _, Tvar _ ->
-                        (* Only add types which are direct variables. Note that types
-                           which aren't variables might themselves /contain/ variables; if
-                           those variables don't show up on another parameter, they're
-                           treated as existentials. See step 2b from Note [With-bounds for
-                           GADTs] *)
-                        ( `Args (arg :: ret_args),
-                          `Params (param :: params),
-                          Btype.TypeSet.add arg seen )
-                      | _ -> `Args ret_args, `Params params, seen)
-                  ( `Args (existentials @ ret_args),
-                    `Params (tof_kinds @ params),
-                    seen )
-                  args decl_params
-              | _ -> Misc.fatal_error "cd_res must be Tconstr")
+              List.fold_left2
+                (fun (`Args ret_args, `Params params, seen) arg param ->
+                  if Btype.TypeSet.mem arg seen
+                  then
+                    (* We've already seen this type parameter, so don't add it again.
+                       See Step 2a from Note [With-bounds for GADTs] *)
+                    `Args ret_args, `Params params, seen
+                  else
+                    match Types.get_desc arg, Types.get_desc param with
+                    | Tvar _, Tvar _ ->
+                      (* Only add types which are direct variables. Note that types
+                         which aren't variables might themselves /contain/ variables; if
+                         those variables don't show up on another parameter, they're
+                         treated as existentials. See step 2b from Note [With-bounds for
+                         GADTs] *)
+                      ( `Args (arg :: ret_args),
+                        `Params (param :: params),
+                        Btype.TypeSet.add arg seen )
+                    | _ -> `Args ret_args, `Params params, seen)
+                ( `Args (orphaned_type_vars @ ret_args),
+                  `Params (tof_kinds @ params),
+                  seen )
+                res_args decl_params
           in
           { Variant_parts.cstr_arg_tys;
             cstr_arg_modalities;
