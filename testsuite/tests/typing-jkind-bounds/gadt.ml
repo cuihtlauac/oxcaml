@@ -382,6 +382,30 @@ module F2 :
     end
 |}]
 
+module F3(M : S with type 'a b = 'a) = struct
+  type t : value mod portable = M.t
+  let foo (x : t @ nonportable) = use_portable x
+end
+[%%expect{|
+module F3 :
+  functor
+    (M : sig
+           type 'a b = 'a
+           type t = P : ('a : value mod portable). 'a b -> t
+         end)
+    -> sig type t = M.t val foo : t -> unit end
+|}]
+
+module F4(M : S with type 'a b = 'a) = struct
+  let foo (x : M.t @ contended) = use_uncontended x
+end
+[%%expect{|
+Line 2, characters 50-51:
+2 |   let foo (x : M.t @ contended) = use_uncontended x
+                                                      ^
+Error: This value is "contended" but expected to be "uncontended".
+|}]
+
 (* _ in parameters *)
 
 (* CR layouts v2.8: Printing [_] here is not wrong (and in fact the overall inferred kind
