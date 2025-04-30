@@ -509,6 +509,18 @@ type exist_row1 = Mk : ([< `A | `B of int ref] as 'a) -> exist_row1
 type exist_row1 = Mk : [< `A | `B of int ref ] -> exist_row1
 |}]
 
+type show_me_the_kind : immediate = exist_row1
+[%%expect{|
+Line 1, characters 0-46:
+1 | type show_me_the_kind : immediate = exist_row1
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The kind of type "exist_row1" is immutable_data
+         with [< `A | `B of int ref ]
+         because of the definition of exist_row1 at line 1, characters 0-67.
+       But the kind of type "exist_row1" must be a subkind of immediate
+         because of the definition of show_me_the_kind at line 1, characters 0-46.
+|}]
+
 let foo (x : exist_row1 @ nonportable) = use_portable x
 (* CR layouts v2.8: This should be accepted *)
 [%%expect{|
@@ -531,6 +543,18 @@ type exist_row2 = Mk : ([> `A | `B of int ref] as 'a) -> exist_row2
 type exist_row2 = Mk : [> `A | `B of int ref ] -> exist_row2
 |}]
 
+type show_me_the_kind : immediate = exist_row2
+[%%expect{|
+Line 1, characters 0-46:
+1 | type show_me_the_kind : immediate = exist_row2
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The kind of type "exist_row2" is immutable_data
+         with [> `A | `B of int ref ]
+         because of the definition of exist_row2 at line 1, characters 0-67.
+       But the kind of type "exist_row2" must be a subkind of immediate
+         because of the definition of show_me_the_kind at line 1, characters 0-46.
+|}]
+
 let foo (x : exist_row2 @ nonportable) = use_portable x
 [%%expect{|
 Line 1, characters 54-55:
@@ -551,6 +575,18 @@ type 'a exist_row3 = Mk : ([> `A | `B of int ref] as 'a) -> 'a option exist_row3
 [%%expect{|
 type 'a exist_row3 =
     Mk : 'a -> ([> `A | `B of int ref ] as 'a) option exist_row3
+|}]
+
+type show_me_the_kind : immediate = exist_row2
+[%%expect{|
+Line 1, characters 0-46:
+1 | type show_me_the_kind : immediate = exist_row2
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The kind of type "exist_row2" is immutable_data
+         with [> `A | `B of int ref ]
+         because of the definition of exist_row2 at line 1, characters 0-67.
+       But the kind of type "exist_row2" must be a subkind of immediate
+         because of the definition of show_me_the_kind at line 1, characters 0-46.
 |}]
 
 (* In the future, maybe local equations will let us figure out that something mode crosses
