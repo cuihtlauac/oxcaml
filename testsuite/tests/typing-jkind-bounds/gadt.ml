@@ -475,6 +475,23 @@ Error: The kind of type "box" is immutable_data with _
          because of the annotation on the declaration of the type box.
 |}]
 
+(* Only the first type parameter matters *)
+
+let crosses (x : (int, int ref) box2 @ contended) = use_uncontended x
+[%%expect{|
+val crosses : (int, int ref) box2 @ contended -> unit = <fun>
+|}]
+
+let doesn't_cross (x : (int ref, int) box2 @ contended) = use_uncontended x
+(* CR layouts v2.8: arguably this should be accepted if [crosses] is accepted (even though
+   x is uninhabited) *)
+[%%expect{|
+Line 1, characters 74-75:
+1 | let doesn't_cross (x : (int ref, int) box2 @ contended) = use_uncontended x
+                                                                              ^
+Error: This value is "contended" but expected to be "uncontended".
+|}]
+
 (* Constraints and existentials *)
 
 type 'a t constraint 'a = 'b option
