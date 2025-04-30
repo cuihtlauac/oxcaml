@@ -610,7 +610,7 @@ Error: This value is "nonportable" but expected to be "portable".
    more than we would know otherwise. *)
 type 'a idx = | I : int idx | Br : bool ref idx
 type exist = Exist : ('a : value mod portable). 'a * 'a idx -> exist
-let foo (exist @ contended) eq =
+let foo (exist : exist @ contended) eq =
   match exist with
   | Exist (x, idx) -> begin
     match idx with
