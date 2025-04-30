@@ -2290,9 +2290,11 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
 
        1. Loop over the constructors. If a constructor is not a variant constructor, just
        add its fields and their modalities as with-bounds, then skip step 2
+
        2. For GADT constructors, call [Ctype.apply] (passed in as [type_apply]) to
        substitute the arguments on the return types of gadts with the arguments to the
-       type declaration. For example, in the following type declaration:
+       type declaration (except in the case of return type arguments which are not bare
+       type variables, see 2b). For example, in the following type declaration:
 
        {[
          type 'a t = A : 'b option -> 'b t
@@ -2312,9 +2314,11 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
        omit all other possible instantiations. That means that in the above type, we'll
        substitute ['x] for both instances of ['a] and infer a kind of [immutable_data with
        'x]. This is sound, but somewhat restrictive; in a perfect world, we'd infer a kind
-       of [immutable_data with ('x OR 'y)], but that goes beyond what with-bounds can describe (which, if we implemented it, would introduce a disjunction in type inference, requiring backtracking). At some point
-       in the future, we should at least change the subsumption algorithm to accept either
-       [immutable_data with 'x] or [immutable_data with 'y] (* CR layouts v2.8: do that *)
+       of [immutable_data with ('x OR 'y)], but that goes beyond what with-bounds can
+       describe (which, if we implemented it, would introduce a disjunction in type
+       inference, requiring backtracking). At some point in the future, we should at least
+       change the subsumption algorithm to accept either [immutable_data with 'x] or
+       [immutable_data with 'y] (* CR layouts v2.8: do that *)
 
        2b. If a type appears in an argument as something other than a direct TVar, eg in
        the following type:
