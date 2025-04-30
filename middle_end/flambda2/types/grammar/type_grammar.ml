@@ -3332,6 +3332,47 @@ let tag_immediate t : t =
   | Naked_nativeint _ | Naked_vec128 _ | Rec_info _ | Region _ ->
     Misc.fatal_errorf "Type of wrong kind for [tag_immediate]: %a" print t
 
+let untag_immediate t =
+  let unknown = Naked_immediate TD.unknown in
+  let bottom = Naked_immediate TD.bottom in
+  match t with
+  | Value ty -> (
+    match TD.descr ty with
+    | Unknown -> unknown
+    | Bottom -> bottom
+    | Ok (No_alias { non_null; is_null = Not_null | Maybe_null }) -> (
+      match non_null with
+      | Unknown -> unknown
+      | Bottom -> bottom
+      | Ok (Variant { immediates = Unknown; _ }) -> unknown
+      | Ok (Variant { immediates = Known (Naked_immediate _ as t); _ }) -> t
+      | Ok
+          ( Variant
+              { immediates =
+                  Known
+                    ( Value _ | Naked_float _ | Naked_float32 _ | Naked_int32 _
+                    | Naked_int64 _ | Naked_nativeint _ | Naked_vec128 _
+                    | Rec_info _ | Region _ );
+                _
+              }
+          | Mutable_block _
+          | Boxed_float32 (_, _)
+          | Boxed_float (_, _)
+          | Boxed_int32 (_, _)
+          | Boxed_int64 (_, _)
+          | Boxed_nativeint (_, _)
+          | Boxed_vec128 (_, _)
+          | Closures _ | String _ | Array _ ) ->
+        Misc.fatal_errorf "immediates does not contain naked immediates: %a"
+          print t)
+    | Ok (Equals _) ->
+      (* CR jvanburen: have an untagged constructor of this *)
+      unknown)
+  | Naked_immediate _ | Naked_float _ | Naked_float32 _ | Naked_int32 _
+  | Naked_int64 _ | Naked_nativeint _ | Naked_vec128 _ | Rec_info _ | Region _
+    ->
+    Misc.fatal_errorf "Type of wrong kind for [untag_immediate]: %a" print t
+
 let tagged_immediate_alias_to ~naked_immediate : t =
   tag_immediate
     (Naked_immediate (TD.create_equals (Simple.var naked_immediate)))
