@@ -3393,7 +3393,7 @@ let immutable_array ~element_kind ~fields alloc_mode =
     (Array
        { element_kind;
          length =
-           this_tagged_immediate (Targetint_31_63.of_int (List.length fields));
+           this_naked_immediate (Targetint_31_63.of_int (List.length fields));
          contents = Known (Immutable { fields = Array.of_list fields });
          alloc_mode
        })
