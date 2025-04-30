@@ -2333,7 +2333,17 @@ let for_boxed_variant ~decl_params ~type_apply ~free_vars cstrs =
        those have best kinds, they'll just get normalized away during normalization,
        except in the case that they show up as an argument to a type constructor
        representing an abstract type - in which case, they still end up in the (fully
-       normalized) with-bounds.
+       normalized) with-bounds. For example, the following type:
+
+       {[
+         type t : A : ('a : value mod portable). 'a abstract -> t
+       ]}
+
+       has kind:
+
+       {[
+         immutable_data with (type : value mod portable) abstract
+       ]}
     *)
     let add_with_bounds_for_cstr jkind cstr =
       let cstr_arg_tys, cstr_arg_modalities =
