@@ -299,17 +299,6 @@ let alloc_boxedintnat_header (mode : Cmm.Alloc_mode.t) dbg =
 
 (* Integers *)
 
-let max_repr_int = max_int asr 1
-
-let min_repr_int = min_int asr 1
-
-let int_const dbg n =
-  if n <= max_repr_int && n >= min_repr_int
-  then Cconst_int ((n lsl 1) + 1, dbg)
-  else
-    Cconst_natint
-      (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n, dbg)
-
 let natint_const_untagged dbg n =
   if n > Nativeint.of_int max_int || n < Nativeint.of_int min_int
   then Cconst_natint (n, dbg)
@@ -682,7 +671,10 @@ let rec mul_int c1 c2 dbg =
 
 let tag_int i dbg =
   match i with
-  | Cconst_int (n, _) -> int_const dbg n
+  | Cop (Clsr, [c; Cconst_int (n, _)], _) when n > 0 && is_defined_shift n ->
+    or_const (lsr_const c (n - 1) dbg) 1n dbg
+  | Cop (Casr, [c; Cconst_int (n, _)], _) when n > 0 && is_defined_shift n ->
+    or_const (asr_const c (n - 1) dbg) 1n dbg
   | c -> incr_int (lsl_const c 1 dbg) dbg
 
 let untag_int i dbg =
@@ -728,22 +720,16 @@ let mk_not dbg cmm =
     Cop (Csubi, [Cconst_int (4, dbg); c], dbg)
 
 let mk_compare_ints_untagged dbg a1 a2 =
-  bind "int_cmp" a2 (fun a2 ->
-      bind "int_cmp" a1 (fun a1 ->
-          let op1 = Cop (Ccmpi Cgt, [a1; a2], dbg) in
-          let op2 = Cop (Ccmpi Clt, [a1; a2], dbg) in
-          sub_int op1 op2 dbg))
+  match get_const a1, get_const a2 with
+  | Some a1, Some a2 -> Cconst_int (Nativeint.compare a1 a2, dbg)
+  | None, _ | _, None ->
+    bind "int_cmp" a2 (fun a2 ->
+        bind "int_cmp" a1 (fun a1 ->
+            let op1 = Cop (Ccmpi Cgt, [a1; a2], dbg) in
+            let op2 = Cop (Ccmpi Clt, [a1; a2], dbg) in
+            sub_int op1 op2 dbg))
 
-let mk_compare_ints dbg a1 a2 =
-  match a1, a2 with
-  | Cconst_int (c1, _), Cconst_int (c2, _) -> int_const dbg (Int.compare c1 c2)
-  | Cconst_natint (c1, _), Cconst_natint (c2, _) ->
-    int_const dbg (Nativeint.compare c1 c2)
-  | Cconst_int (c1, _), Cconst_natint (c2, _) ->
-    int_const dbg Nativeint.(compare (of_int c1) c2)
-  | Cconst_natint (c1, _), Cconst_int (c2, _) ->
-    int_const dbg Nativeint.(compare c1 (of_int c2))
-  | a1, a2 -> tag_int (mk_compare_ints_untagged dbg a1 a2) dbg
+let mk_compare_ints dbg a1 a2 = tag_int (mk_compare_ints_untagged dbg a1 a2) dbg
 
 let mk_compare_floats_gen ~tag_result ~width dbg a1 a2 =
   bind "float_cmp" a2 (fun a2 ->
@@ -1244,8 +1230,6 @@ let log2_size_float = Misc.log2 size_float
 let wordsize_shift = 9
 
 let numfloat_shift = 9 + log2_size_float - log2_size_addr
-
-let addr_array_length_shifted hdr dbg = lsr_const hdr wordsize_shift dbg
 
 (** Produces a pointer to the element of the array [ptr] on the position [ofs]
    with the given element [log2size] log2 element size (in bytes).
@@ -2002,7 +1986,7 @@ let make_alloc_generic ~block_kind ~mode ~alloc_block_kind dbg tag wordsize args
       | e1 :: el, m1 :: ml ->
         let ofs = memory_chunk_size_in_words_for_mixed_block m1 in
         Csequence
-          ( alloc_generic_set_fn (Cvar id) (int_const dbg idx) e1 m1 dbg,
+          ( alloc_generic_set_fn (Cvar id) (int ~dbg idx) e1 m1 dbg,
             fill_fields (idx + ofs) el ml )
       | _ ->
         Misc.fatal_errorf
@@ -3502,10 +3486,6 @@ let raise_prim raise_kind ~extra_args arg dbg =
 
 let negint arg dbg = Cop (Csubi, [Cconst_int (2, dbg); arg], dbg)
 
-let addr_array_length arg dbg =
-  let hdr = get_header_masked arg dbg in
-  Cop (Cor, [addr_array_length_shifted hdr dbg; Cconst_int (1, dbg)], dbg)
-
 (* CR-soon gyorsh: effects and coeffects for primitives are set conservatively
    to Arbitrary_effects and Has_coeffects, resp. Check if this can be improved
    (e.g., bswap). *)
@@ -4602,7 +4582,7 @@ let dls_get ~dbg = Cop (Cdls_get, [], dbg)
 let perform ~dbg eff =
   let cont =
     make_alloc dbg ~tag:Runtimetags.cont_tag
-      [int_const dbg 0; int_const dbg 0]
+      [Cconst_int (1, dbg); Cconst_int (1, dbg)]
       ~mode:Cmm.Alloc_mode.Heap
   in
   (* Rc_normal means "allow tailcalls". Preventing them here by using Rc_nontail

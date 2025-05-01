@@ -448,8 +448,8 @@ val raise_prim :
 (** Unary negation of an OCaml integer *)
 val negint : unary_primitive
 
-(** Return the length of the array argument, as an untagged integer *)
-val addr_array_length : unary_primitive
+(** Return the length of the given block, as an untagged integer *)
+val get_size : unary_primitive
 
 (** Byte swap primitive Operates on Cmm integers (unboxed values) *)
 val bbswap : Primitive.unboxed_integer -> unary_primitive

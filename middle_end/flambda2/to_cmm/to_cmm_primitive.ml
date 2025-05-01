@@ -252,7 +252,7 @@ let array_length ~dbg arr (kind : P.Array_kind.t) =
        arrays of unboxed products are not packed in any way (e.g. int32#
        elements occupy 64 bits). *)
     assert (C.wordsize_shift = C.numfloat_shift);
-    C.addr_array_length arr dbg
+    C.get_size arr dbg
   | Naked_float32s -> C.unboxed_float32_array_length arr dbg
   | Naked_int32s -> C.unboxed_int32_array_length arr dbg
   | Naked_int64s | Naked_nativeints ->
