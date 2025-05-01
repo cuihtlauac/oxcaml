@@ -3332,6 +3332,10 @@ let tag_immediate t : t =
   | Naked_nativeint _ | Naked_vec128 _ | Rec_info _ | Region _ ->
     Misc.fatal_errorf "Type of wrong kind for [tag_immediate]: %a" print t
 
+let tagged_immediate_alias_to ~naked_immediate : t =
+  tag_immediate
+    (Naked_immediate (TD.create_equals (Simple.var naked_immediate)))
+
 let untag_immediate t =
   let unknown = Naked_immediate TD.unknown in
   let bottom = Naked_immediate TD.bottom in
@@ -3365,17 +3369,19 @@ let untag_immediate t =
           | Closures _ | String _ | Array _ ) ->
         Misc.fatal_errorf "immediates does not contain naked immediates: %a"
           print t)
-    | Ok (Equals _) ->
-      (* CR jvanburen: have an untagged constructor of this *)
-      unknown)
+    | Ok (Equals simple) -> (
+      match Simple.must_be_const simple with
+      | None ->
+        (* CR jvanburen: maybe add an untagged constructor for this? *)
+        unknown
+      | Some const -> (
+        match RWC.is_tagged_immediate const with
+        | Some const -> this_naked_immediate const
+        | None -> Misc.fatal_errorf "value contains non-value: %a" print t)))
   | Naked_immediate _ | Naked_float _ | Naked_float32 _ | Naked_int32 _
   | Naked_int64 _ | Naked_nativeint _ | Naked_vec128 _ | Rec_info _ | Region _
     ->
     Misc.fatal_errorf "Type of wrong kind for [untag_immediate]: %a" print t
-
-let tagged_immediate_alias_to ~naked_immediate : t =
-  tag_immediate
-    (Naked_immediate (TD.create_equals (Simple.var naked_immediate)))
 
 let is_int_for_scrutinee ~scrutinee : t =
   Naked_immediate (TD.create (Is_int (alias_type_of K.value scrutinee)))
