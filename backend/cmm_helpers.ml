@@ -1783,7 +1783,7 @@ let lookup_tag obj tag dbg =
 let lookup_label obj lab dbg =
   bind "lab" lab (fun lab ->
       let table = Cop (mk_load_mut Word_val, [obj], dbg) in
-      addr_array_ref table lab dbg)
+      addr_array_ref table (untag_int lab dbg) dbg)
 
 module Extended_machtype_component = struct
   type t =
