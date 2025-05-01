@@ -1620,6 +1620,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
       | Immediate -> Immediates
       | Pointer -> Values (convert_init_or_assign init_or_assign)
     in
+    let field = convert_index field ~index_kind:Ptagged_int_index in
     [Ternary (Array_set (array_kind, array_set_kind), Prim obj, field, value)]
   | Parraylength kind, [[arg]] -> (
     let array_kind = convert_array_kind_for_length kind in
