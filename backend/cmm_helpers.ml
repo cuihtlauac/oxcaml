@@ -1247,52 +1247,26 @@ let numfloat_shift = 9 + log2_size_float - log2_size_addr
 
 let addr_array_length_shifted hdr dbg = lsr_const hdr wordsize_shift dbg
 
-(* Produces a pointer to the element of the array [ptr] on the position [ofs]
-   with the given element [log2size] log2 element size.
+(** Produces a pointer to the element of the array [ptr] on the position [ofs]
+   with the given element [log2size] log2 element size (in bytes).
 
-   [ofs] is given as a tagged int expression.
+   [ofs] is given as an UNTAGGED int expression.
 
    The optional ?typ argument is the C-- type of the result. By default, it is
    Addr, meaning we are constructing a derived pointer into the heap. If we know
    the pointer is outside the heap (this is the case for bigarray indexing), we
    give type Int instead. *)
-
-let array_indexing ?typ log2size ptr ofs dbg =
-  let add =
-    match typ with
-    | None | Some Addr -> Cadda
-    | Some Int -> Caddi
-    | _ -> assert false
-  in
-  match ofs with
-  | Cconst_int (n, _) ->
-    let i = n asr 1 in
-    if i = 0
-    then ptr
-    else Cop (add, [ptr; Cconst_int (i lsl log2size, dbg)], dbg)
-  | Cop
-      ( (Caddi | Cor),
-        [Cop (Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)],
-        dbg' ) ->
-    Cop (add, [ptr; lsl_const c log2size dbg], dbg')
-  | Cop (Caddi, [c; Cconst_int (n, _)], dbg') when log2size = 0 ->
-    Cop
-      ( add,
-        [Cop (add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1, dbg)],
-        dbg' )
-  | Cop (Caddi, [c; Cconst_int (n, _)], _) ->
-    Cop
-      ( add,
-        [ Cop (add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
-          Cconst_int ((n - 1) lsl (log2size - 1), dbg) ],
-        dbg )
-  | _ when log2size = 0 -> Cop (add, [ptr; untag_int ofs dbg], dbg)
+let array_indexing ?(typ = Addr) log2size ptr ofs dbg =
+  match get_const ofs with
+  | Some 0n -> ptr
   | _ ->
-    Cop
-      ( add,
-        [ Cop (add, [ptr; lsl_const ofs (log2size - 1) dbg], dbg);
-          Cconst_int (-1 lsl (log2size - 1), dbg) ],
-        dbg )
+    let add =
+      match (typ : machtype_component) with
+      | Addr -> Cadda
+      | Int -> Caddi
+      | Val | Float | Vec128 | Float32 | Valx2 -> assert false
+    in
+    Cop (add, [ptr; lsl_const ofs log2size dbg], dbg)
 
 (* CR Gbury: this conversion int -> nativeint is potentially unsafe when
    cross-compiling for 64-bit on a 32-bit host *)
@@ -1351,35 +1325,30 @@ let unboxed_packed_array_length arr dbg ~custom_ops_base_symbol
     ~elements_per_word =
   (* Checking custom_ops is needed to determine if the array contains an odd or
      even number of elements *)
-  let res =
-    bind "arr" arr (fun arr ->
-        let custom_ops_var = Backend_var.create_local "custom_ops" in
-        let custom_ops_index_var =
-          Backend_var.create_local "custom_ops_index"
-        in
-        let num_words_var = Backend_var.create_local "num_words" in
-        Clet
-          ( VP.create num_words_var,
-            (* subtract custom_operations word *)
-            sub_int (get_size arr dbg) (int ~dbg 1) dbg,
-            Clet
-              ( VP.create custom_ops_var,
-                Cop (mk_load_immut Word_int, [arr], dbg),
-                Clet
-                  ( VP.create custom_ops_index_var,
-                    (* compute index into custom ops array *)
-                    lsr_int
-                      (sub_int (Cvar custom_ops_var) custom_ops_base_symbol dbg)
-                      (int ~dbg custom_ops_size_log2)
-                      dbg,
-                    (* subtract index from length in elements *)
-                    sub_int
-                      (mul_int (Cvar num_words_var)
-                         (int ~dbg elements_per_word)
-                         dbg)
-                      (Cvar custom_ops_index_var) dbg ) ) ))
-  in
-  tag_int res dbg
+  bind "arr" arr (fun arr ->
+      let custom_ops_var = Backend_var.create_local "custom_ops" in
+      let custom_ops_index_var = Backend_var.create_local "custom_ops_index" in
+      let num_words_var = Backend_var.create_local "num_words" in
+      Clet
+        ( VP.create num_words_var,
+          (* subtract custom_operations word *)
+          sub_int (get_size arr dbg) (int ~dbg 1) dbg,
+          Clet
+            ( VP.create custom_ops_var,
+              Cop (mk_load_immut Word_int, [arr], dbg),
+              Clet
+                ( VP.create custom_ops_index_var,
+                  (* compute index into custom ops array *)
+                  lsr_int
+                    (sub_int (Cvar custom_ops_var) custom_ops_base_symbol dbg)
+                    (int ~dbg custom_ops_size_log2)
+                    dbg,
+                  (* subtract index from length in elements *)
+                  sub_int
+                    (mul_int (Cvar num_words_var)
+                       (int ~dbg elements_per_word)
+                       dbg)
+                    (Cvar custom_ops_index_var) dbg ) ) ))
 
 let unboxed_int32_array_length =
   unboxed_packed_array_length
@@ -1391,12 +1360,9 @@ let unboxed_float32_array_length =
     ~elements_per_word:2
 
 let unboxed_int64_or_nativeint_array_length arr dbg =
-  let res =
-    bind "arr" arr (fun arr ->
-        (* need to subtract so as not to count the custom_operations field *)
-        sub_int (get_size arr dbg) (int ~dbg 1) dbg)
-  in
-  tag_int res dbg
+  bind "arr" arr (fun arr ->
+      (* need to subtract so as not to count the custom_operations field *)
+      sub_int (get_size arr dbg) (int ~dbg 1) dbg)
 
 let unboxed_vec128_array_length arr dbg =
   let res =
@@ -1404,7 +1370,7 @@ let unboxed_vec128_array_length arr dbg =
         (* need to subtract so as not to count the custom_operations field *)
         sub_int (get_size arr dbg) (int ~dbg 1) dbg)
   in
-  tag_int (lsr_int res (int ~dbg 1) dbg) dbg
+  lsr_int res (int ~dbg 1) dbg
 
 let addr_array_ref arr ofs dbg =
   Cop (mk_load_mut Word_val, [array_indexing log2_size_addr arr ofs dbg], dbg)
@@ -1953,7 +1919,7 @@ let send_function_name arity result (mode : Cmx_format.alloc_mode) =
 
 let call_cached_method obj tag cache pos args args_type result (apos, mode) dbg
     =
-  let cache = array_indexing log2_size_addr cache pos dbg in
+  let cache = array_indexing log2_size_addr cache (untag_int pos dbg) dbg in
   Compilenv.need_send_fun
     (List.map Extended_machtype.change_tagged_int_to_val args_type)
     (Extended_machtype.change_tagged_int_to_val result)

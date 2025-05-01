@@ -66,9 +66,6 @@ val closure_info' :
 (** Wrappers *)
 val alloc_infix_header : int -> Debuginfo.t -> expression
 
-(** Make an integer constant from the given integer (tags the integer) *)
-val int_const : Debuginfo.t -> int -> expression
-
 (** Arithmetical operations on integers *)
 val add_int : expression -> expression -> Debuginfo.t -> expression
 
@@ -451,7 +448,7 @@ val raise_prim :
 (** Unary negation of an OCaml integer *)
 val negint : unary_primitive
 
-(** Return the length of the array argument, as an OCaml integer *)
+(** Return the length of the array argument, as an untagged integer *)
 val addr_array_length : unary_primitive
 
 (** Byte swap primitive Operates on Cmm integers (unboxed values) *)
@@ -1083,7 +1080,7 @@ val unboxed_float32_array_ref :
     The float32 is expected to be in the least significant bits of the
     64-bit field.  The most significant 32 bits of such field are ignored.
 
-    The zero-indexed element number is specified as a tagged immediate.
+    The zero-indexed element number is specified as an untagged immediate.
 *)
 val unboxed_mutable_float32_unboxed_product_array_ref :
   expression -> array_index:expression -> Debuginfo.t -> expression
@@ -1094,7 +1091,7 @@ val unboxed_mutable_float32_unboxed_product_array_ref :
 (** Write an unboxed float32 into a 64-bit field in an array represented as
     a mixed block (with tag zero), as used for unboxed product arrays.
 
-    The zero-indexed element number is specified as a tagged immediate.
+    The zero-indexed element number is specified as an untagged immediate.
 
     The float32 will be written to the least significant bits of the
     64-bit field.  The top 32 bits of the written word will be initialized
@@ -1115,7 +1112,7 @@ val unboxed_int32_array_ref :
     in an array represented as a mixed block (with tag zero), as used for
     unboxed product arrays.
 
-    The zero-indexed element number is specified as a tagged immediate.
+    The zero-indexed element number is specified as an untagged immediate.
 
     The returned value is always sign extended, but it is not assumed that
     the 64-bit field in the array contains a sign-extended representation.
@@ -1126,7 +1123,7 @@ val unboxed_mutable_int32_unboxed_product_array_ref :
 (** Write an unboxed int32 into a 64-bit field in an array represented as
     a mixed block (with tag zero), as used for unboxed product arrays.
 
-    The zero-indexed element number is specified as a tagged immediate.
+    The zero-indexed element number is specified as an untagged immediate.
 
     The write is done as a 64-bit write of a sign-extended version of the
     supplied [new_value].
@@ -1145,7 +1142,7 @@ val unboxed_mutable_int32_unboxed_product_array_set :
     in question is an unboxed product array: these are represented as mixed
     blocks, not custom blocks.
 
-    The zero-indexed element number is specified as a tagged immediate.
+    The zero-indexed element number is specified as an untagged immediate.
 *)
 val unboxed_int64_or_nativeint_array_ref :
   has_custom_ops:bool ->
