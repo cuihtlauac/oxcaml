@@ -262,9 +262,7 @@ let array_length ~dbg arr (kind : P.Array_kind.t) =
   | Naked_vec128s -> C.unboxed_vec128_array_length arr dbg
 
 let array_load_128 ~dbg ~element_width_log2 ~has_custom_ops arr index =
-  let index =
-    C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
-  in
+  let index = C.lsl_int index (Cconst_int (element_width_log2, dbg)) dbg in
   let index =
     (* Skip custom_ops pointer *)
     if has_custom_ops
@@ -274,9 +272,7 @@ let array_load_128 ~dbg ~element_width_log2 ~has_custom_ops arr index =
   C.unaligned_load_128 arr index dbg
 
 let array_set_128 ~dbg ~element_width_log2 ~has_custom_ops arr index new_value =
-  let index =
-    C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
-  in
+  let index = C.lsl_int index (Cconst_int (element_width_log2, dbg)) dbg in
   let index =
     (* Skip custom_ops pointer *)
     if has_custom_ops

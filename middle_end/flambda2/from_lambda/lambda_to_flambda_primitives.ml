@@ -43,7 +43,7 @@ module N = struct
     H.Prim (Binary (Int_arith (Naked_nativeint, op), x, y))
 
   let[@inline] int_shift op x y =
-    let y = Simple.const_int (Targetint_31_63.of_int y) in
+    let y = Simple.const_int_of_kind K.naked_immediate y in
     H.Prim (Binary (Int_shift (Naked_nativeint, op), x, Simple y))
 
   let add = int_arith Add
@@ -987,14 +987,7 @@ let compute_array_indexes ~index ~num_elts =
   if num_elts <= 0 then Misc.fatal_errorf "Illegal num_elts value: %d" num_elts;
   List.init num_elts (fun offset ->
       assert (offset >= 0);
-      if offset = 0
-      then index
-      else
-        H.Prim
-          (Binary
-             ( Int_arith (Tagged_immediate, Add),
-               index,
-               Simple (Simple.const_int (Targetint_31_63.of_int offset)) )))
+      if offset = 0 then index else N.add index (N.of_int offset))
 
 let rec array_load_unsafe ~array ~index ~(mut : Lambda.mutable_flag) array_kind
     (array_ref_kind : Array_ref_kind.t) ~current_region : H.expr_primitive list
@@ -1025,15 +1018,13 @@ let rec array_load_unsafe ~array ~index ~(mut : Lambda.mutable_flag) array_kind
       | Unboxed_product kinds -> List.concat_map unarize_kind kinds
     in
     let unarized = List.concat_map unarize_kind array_ref_kinds in
-    let index : H.expr_primitive =
-      let multiplier =
-        List.length unarized |> Targetint_31_63.of_int |> Simple.const_int
-      in
-      Binary (Int_arith (Tagged_immediate, Mul), index, Simple multiplier)
+    let index =
+      let multiplier = N.of_int (List.length unarized) in
+      N.mul index multiplier
     in
     let indexes =
       (* Reminder: all of the unarized components are machine word width. *)
-      compute_array_indexes ~index:(Prim index) ~num_elts:(List.length unarized)
+      compute_array_indexes ~index ~num_elts:(List.length unarized)
     in
     List.concat_map
       (fun (index, array_ref_kind) ->
@@ -1093,15 +1084,13 @@ let rec array_set_unsafe dbg ~array ~index array_kind
       | Unboxed_product kinds -> List.concat_map unarize_kind kinds
     in
     let unarized = List.concat_map unarize_kind array_set_kinds in
-    let index : H.expr_primitive =
-      let multiplier =
-        List.length unarized |> Targetint_31_63.of_int |> Simple.const_int
-      in
-      Binary (Int_arith (Tagged_immediate, Mul), index, Simple multiplier)
+    let index =
+      let multiplier = N.of_int (List.length unarized) in
+      N.mul index multiplier
     in
     let indexes =
       (* Reminder: all of the unarized components are machine word width. *)
-      compute_array_indexes ~index:(Prim index) ~num_elts:(List.length unarized)
+      compute_array_indexes ~index ~num_elts:(List.length unarized)
     in
     if List.compare_lengths indexes new_values <> 0
     then

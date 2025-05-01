@@ -1447,7 +1447,7 @@ let addr_array_set_local arr ofs newval dbg =
           coeffects = Has_coeffects;
           ty_args = []
         },
-      [arr; untag_int ofs dbg; newval],
+      [arr; ofs; newval],
       dbg )
 
 let addr_array_set (mode : Lambda.modify_mode) arr ofs newval dbg =
