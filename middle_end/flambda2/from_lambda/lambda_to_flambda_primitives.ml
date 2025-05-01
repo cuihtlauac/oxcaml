@@ -2093,15 +2093,12 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
         | b :: indexes ->
           if List.compare_length_with indexes num_dimensions <> 0
           then Misc.fatal_errorf "Bad index arity for Pbigarrayref";
-          b, indexes
+          b, List.map (convert_index ~index_kind:Ptagged_int_index) indexes
         | [] -> Misc.fatal_errorf "Pbigarrayref is missing its arguments"
       in
       let box =
         bigarray_box_or_tag_raw_value_to_read kind
           Alloc_mode.For_allocations.heap
-      in
-      let indexes =
-        List.map (convert_index ~index_kind:Ptagged_int_index) indexes
       in
       [box (bigarray_load ~dbg ~unsafe kind layout b indexes)]
     | None, _ ->
@@ -2133,7 +2130,9 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
           let indexes, value = Misc.split_last args in
           if List.compare_length_with indexes num_dimensions <> 0
           then Misc.fatal_errorf "Bad index arity for Pbigarrayset";
-          b, indexes, value
+          ( b,
+            List.map (convert_index ~index_kind:Ptagged_int_index) indexes,
+            value )
         | [] -> Misc.fatal_errorf "Pbigarrayset is missing its arguments"
       in
       let unbox = bigarray_unbox_or_untag_value_to_store kind in
