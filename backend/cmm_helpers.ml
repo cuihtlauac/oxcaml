@@ -2610,7 +2610,7 @@ let make_switch arg cases actions dbg =
          ( Local,
            Array.to_list (Array.map (fun act -> const_actions.(act)) cases) ));
     let table_sym = { sym_name = table; sym_global = Local } in
-    addr_array_ref (Cconst_symbol (table_sym, dbg)) (tag_int arg dbg) dbg
+    addr_array_ref (Cconst_symbol (table_sym, dbg)) arg dbg
   in
   let make_affine_computation ~offset ~slope arg dbg =
     (* In case the resulting integers are an affine function of the index, we
