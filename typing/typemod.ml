@@ -3098,10 +3098,10 @@ and type_structure ?(toplevel = None) funct_body anchor env sstr =
             raise (Error (sexpr.pexp_loc, env, Toplevel_unnamed_nonvalue sort))
           end;
         Tstr_eval (expr, sort, attrs), [], shape_map, env
-      (* jra: mutable flag should not be ignored *)
-    | Pstr_value (_, rec_flag, sdefs) ->
+    | Pstr_value (rec_flag, sdefs) ->
         let (defs, newenv) =
-          Typecore.type_binding env rec_flag ~force_toplevel sdefs in
+          (* jra: should this be hard-coded? *)
+          Typecore.type_binding env Immutable rec_flag ~force_toplevel sdefs in
         let defs = match rec_flag with
           | Recursive -> Typecore.annotate_recursive_bindings env defs
           | Nonrecursive -> defs

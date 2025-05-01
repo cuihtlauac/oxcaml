@@ -690,7 +690,9 @@ let val_of_let_bindings ~loc lbs =
            ?value_constraint:lb.lb_constraint lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
-  let str = mkstr ~loc (Pstr_value(lbs.lbs_mutable, lbs.lbs_rec, List.rev bindings)) in
+  if lbs.lbs_mutable = Mutable
+  then not_expecting loc "mutable"; (* jra: is this the best way to do this? *)
+  let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
   match lbs.lbs_extension with
   | None -> str
   | Some id -> ghstr ~loc (Pstr_extension((id, PStr [str]), []))
@@ -716,6 +718,8 @@ let class_of_let_bindings ~loc lbs body =
           ?value_constraint:lb.lb_constraint lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
+    if lbs.lbs_mutable = Mutable
+    then not_expecting loc "mutable"; (* jra: is this the best way to do this? *)
     (* Our use of let_bindings(no_ext) guarantees the following: *)
     assert (lbs.lbs_extension = None);
     mkclass ~loc (Pcl_let (lbs.lbs_rec, List.rev bindings, body))

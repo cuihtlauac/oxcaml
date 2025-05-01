@@ -172,8 +172,7 @@ let structure_item sub item =
     match item.str_desc with
       Tstr_eval (exp, _, attrs) -> Pstr_eval (sub.expr sub exp, attrs)
     | Tstr_value (rec_flag, list) ->
-        (* jra: don't hard-code Immutable *)
-        Pstr_value (Immutable, rec_flag, List.map (sub.value_binding sub) list)
+        Pstr_value (rec_flag, List.map (sub.value_binding sub) list)
     | Tstr_primitive vd ->
         Pstr_primitive (sub.value_description sub vd)
     | Tstr_type (rec_flag, list) ->
@@ -495,9 +494,12 @@ let expression sub exp =
       Texp_ident (_path, lid, _, _, _) -> Pexp_ident (map_loc sub lid)
     | Texp_constant cst -> Pexp_constant (constant cst)
     | Texp_let (rec_flag, list, exp) ->
-        (* jra: Immutable should not be hard-coded *)
         Pexp_let (Immutable, rec_flag,
           List.map (sub.value_binding sub) list,
+          sub.expr sub exp)
+    | Texp_letmutable (vb, exp) ->
+        Pexp_let (Mutable, Nonrecursive,
+          [sub.value_binding sub vb],
           sub.expr sub exp)
     | Texp_function { params; body } ->
         let body, constraint_ =
@@ -635,8 +637,15 @@ let expression sub exp =
     | Texp_new (_path, lid, _, _) -> Pexp_new (map_loc sub lid)
     | Texp_instvar (_, path, name) ->
       Pexp_ident ({loc = sub.location sub name.loc ; txt = lident_of_path path})
+    | Texp_mutvar id ->
+      Pexp_ident ({loc = sub.location sub id.loc;
+                   txt = lident_of_path (Pident id.txt)})
     | Texp_setinstvar (_, _path, lid, exp) ->
         Pexp_setinstvar (map_loc sub lid, sub.expr sub exp)
+    | Texp_setmutvar(lid, exp) ->
+        let lid = {loc = sub.location sub lid.loc;
+                   txt = Ident.name lid.txt} in
+        Pexp_setinstvar (lid, sub.expr sub exp)
     | Texp_override (_, list) ->
         Pexp_override (List.map (fun (_path, lid, exp) ->
               (map_loc sub lid, sub.expr sub exp)

@@ -1069,8 +1069,8 @@ and structure_item i ppf x =
       line i ppf "Pstr_eval\n";
       attributes i ppf attrs;
       expression i ppf e;
-  | Pstr_value (mf, rf, l) ->
-      line i ppf "Pstr_value %a %a\n" fmt_mutable_flag mf fmt_rec_flag rf;
+  | Pstr_value (rf, l) ->
+      line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
   | Pstr_primitive vd ->
       line i ppf "Pstr_primitive\n";

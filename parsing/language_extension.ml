@@ -176,7 +176,8 @@ let all_extensions =
     Pack SIMD;
     Pack Labeled_tuples;
     Pack Small_numbers;
-    Pack Instances ]
+    Pack Instances;
+    Pack Let_mutable ]
 
 (**********************************)
 (* string conversions *)

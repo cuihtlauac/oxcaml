@@ -74,6 +74,8 @@ module type Sort = sig
 
     val for_instance_var : t
 
+    val for_mutable_var : t
+
     val for_lazy_body : t
 
     val for_tuple_element : t
@@ -297,6 +299,7 @@ module History = struct
     | Class_term_argument
     | Debug_printer_argument
     | Recmod_fun_arg
+    | Mutable_value
     | Unknown of string (* CR layouts: get rid of these *)
 
   type immediate_creation_reason =

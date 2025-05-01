@@ -209,8 +209,7 @@ module Exp = struct
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pexp_ident a)
   let constant ?loc ?attrs a = mk ?loc ?attrs (Pexp_constant a)
-  (* jra: Immutable should not be hard-coded *)
-  let let_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_let (Immutable, a, b, c))
+  let let_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pexp_let (a, b, c, d))
   let function_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_function (a, b, c))
   let apply ?loc ?attrs a b = mk ?loc ?attrs (Pexp_apply (a, b))
   let match_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_match (a, b))
@@ -339,8 +338,7 @@ module Str = struct
   let mk ?(loc = !default_loc) d = {pstr_desc = d; pstr_loc = loc}
 
   let eval ?loc ?(attrs = []) a = mk ?loc (Pstr_eval (a, attrs))
-  (* jra: Immutable should not be hard-coded *)
-  let value ?loc a b = mk ?loc (Pstr_value (Immutable, a, b))
+  let value ?loc a b = mk ?loc (Pstr_value (a, b))
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
   let type_ ?loc rec_flag a = mk ?loc (Pstr_type (rec_flag, a))
   let type_extension ?loc a = mk ?loc (Pstr_typext a)
