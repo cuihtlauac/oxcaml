@@ -86,8 +86,9 @@ let get_level_ops : type a. a t -> (module Extension_level with type t = a) =
 let is_erasable : type a. a t -> bool = function
   | Mode | Unique | Overwriting | Layouts -> true
   | Comprehensions | Include_functor | Polymorphic_parameters | Immutable_arrays
-  | Module_strengthening | SIMD | Labeled_tuples | Small_numbers | Instances | Let_mutable
-    -> false
+  | Module_strengthening | SIMD | Labeled_tuples | Small_numbers | Instances
+  | Let_mutable ->
+    false
 
 let maturity_of_unique_for_drf = Stable
 
@@ -124,7 +125,7 @@ module Exist_pair = struct
     | Pair
         ( (( Comprehensions | Include_functor | Polymorphic_parameters
            | Immutable_arrays | Module_strengthening | Labeled_tuples
-           | Instances | Overwriting | Let_mutable) as ext),
+           | Instances | Overwriting | Let_mutable ) as ext),
           _ ) ->
       to_string ext
 
@@ -219,7 +220,8 @@ let equal_t (type a b) (a : a t) (b : b t) : (a, b) Misc.eq option =
   | Let_mutable, Let_mutable -> Some Refl
   | ( ( Comprehensions | Mode | Unique | Overwriting | Include_functor
       | Polymorphic_parameters | Immutable_arrays | Module_strengthening
-      | Layouts | SIMD | Labeled_tuples | Small_numbers | Instances | Let_mutable),
+      | Layouts | SIMD | Labeled_tuples | Small_numbers | Instances
+      | Let_mutable ),
       _ ) ->
     None
 

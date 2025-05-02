@@ -2797,9 +2797,7 @@ module Format_history = struct
       fprintf ppf
         "it's the type of the first argument to a function in a recursive \
          module"
-    | Mutable_value ->
-      fprintf ppf
-        "it's the type of a let mutable value"
+    | Mutable_value -> fprintf ppf "it's the type of a let mutable value"
     | Unknown s ->
       fprintf ppf
         "unknown @[(please alert the Jane Street@;\
