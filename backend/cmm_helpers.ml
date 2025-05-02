@@ -1638,9 +1638,8 @@ let unboxed_int64_or_nativeint_array_ref ~has_custom_ops arr ~array_index dbg =
           let index =
             if has_custom_ops
             then
-              (* Need to skip the custom_operations field. 2 not 1 since we are
-                 manipulating a tagged int. *)
-              add_int index (int ~dbg 2) dbg
+              (* Need to skip the custom_operations field. *)
+              add_int index (int ~dbg 1) dbg
             else index
           in
           int_array_ref arr index dbg))
@@ -1652,7 +1651,7 @@ let unboxed_packed_array_set arr ~index ~new_value dbg ~memory_chunk
           bind "new_value" new_value (fun new_value ->
               let index =
                 (* See comment in [unboxed_packed_array_ref]. *)
-                add_int index (int ~dbg (elements_per_word * 2)) dbg
+                add_int index (int ~dbg elements_per_word) dbg
               in
               let log2_size_addr = 2 in
               Cop
@@ -1677,7 +1676,7 @@ let unboxed_int64_or_nativeint_array_set ~has_custom_ops arr ~index ~new_value
                 if has_custom_ops
                 then
                   (* See comment in [unboxed_int64_or_nativeint_array_ref]. *)
-                  add_int index (int ~dbg 2) dbg
+                  add_int index (int ~dbg 1) dbg
                 else index
               in
               int_array_set arr index new_value dbg)))
