@@ -1590,10 +1590,8 @@ let unboxed_packed_array_ref arr index dbg ~memory_chunk ~elements_per_word =
           let index =
             (* Need to skip the custom_operations field. We add
                elements_per_word offsets not 1 since the call to
-               [array_indexing], below, is in terms of elements. Then we
-               multiply the offset by 2 since we are manipulating a tagged
-               int. *)
-            add_int index (int ~dbg (elements_per_word * 2)) dbg
+               [array_indexing], below, is in terms of elements. *)
+            add_int index (int ~dbg elements_per_word) dbg
           in
           let log2_size_addr = 2 in
           Cop
