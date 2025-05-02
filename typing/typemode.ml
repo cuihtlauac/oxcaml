@@ -431,187 +431,71 @@ let mutable_implied_modalities (mut : Types.mutability) attrs =
     then monadic
     else monadic @ comonadic
 
+let mutable_implied_modalities (mut : Types.mutability) attrs =
+  let l = mutable_implied_modalities mut attrs in
+  List.fold_left
+    (fun t (Modality.Atom (ax, a)) -> Modality.Value.Const.set ax a t)
+    Modality.Value.Const.id l
+
 (* Since [yielding] is the default mode in presence of [local],
    the [global] modality must also apply [unyielding] unless specified.
 
    Similarly for [visibility]/[contention] and [statefulness]/[portability]. *)
-let default_modalities (modalities : Modality.t list) =
-  let areality =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Areality, Meet_with a) ->
-          Some (a : Regionality.Const.t)
-        | _ -> None)
-      modalities
-  in
-  let yielding =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Yielding, Meet_with y) ->
-          Some (y : Yielding.Const.t)
-        | _ -> None)
-      modalities
-  in
-  let visibility =
-    List.find_map
-      (function
-        | Modality.Atom (Monadic Visibility, Join_with a) ->
-          Some (a : Visibility.Const.t)
-        | _ -> None)
-      modalities
-  in
-  let statefulness =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Statefulness, Meet_with s) ->
-          Some (s : Statefulness.Const.t)
-        | _ -> None)
-      modalities
-  in
-  let contention =
-    List.find_map
-      (function
-        | Modality.Atom (Monadic Contention, Join_with c) ->
-          Some (c : Contention.Const.t)
-        | _ -> None)
-      modalities
-  in
-  let portability =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Portability, Meet_with p) ->
-          Some (p : Portability.Const.t)
-        | _ -> None)
-      modalities
-  in
-  (* Build the list of extra modalities *)
-  let extra =
-    (match areality, yielding with
-    | Some Global, None ->
-      [Modality.Atom (Comonadic Yielding, Meet_with Yielding.Const.Unyielding)]
-    | _, _ -> [])
-    @ (match visibility, contention with
-      | Some Visibility.Const.Immutable, None ->
-        [ Modality.Atom
-            (Monadic Contention, Join_with Contention.Const.Contended) ]
-      | Some Visibility.Const.Read, None ->
-        [Modality.Atom (Monadic Contention, Join_with Contention.Const.Shared)]
-      | _, _ -> [])
-    @
-    match statefulness, portability with
-    | Some Statefulness.Const.Stateless, None ->
-      [ Modality.Atom
-          (Comonadic Portability, Meet_with Portability.Const.Portable) ]
-    | _, _ -> []
-  in
-  modalities @ extra
+let implied_modalities (Atom (ax, a) : Modality.t) : Modality.t list =
+  match ax, a with
+  | Comonadic Areality, Meet_with a ->
+    let b : Yielding.Const.t =
+      match a with
+      | Global -> Unyielding
+      | Local -> Yielding
+      | Regional -> assert false
+    in
+    [Atom (Comonadic Yielding, Meet_with b)]
+  | Monadic Visibility, Join_with a ->
+    let b : Contention.Const.t =
+      match a with
+      | Immutable -> Contended
+      | Read -> Shared
+      | Read_write -> Uncontended
+    in
+    [Atom (Monadic Contention, Join_with b)]
+  | Comonadic Statefulness, Meet_with a ->
+    let b : Portability.Const.t =
+      match a with Stateless -> Portable | Stateful | Observing -> Nonportable
+    in
+    [Atom (Comonadic Portability, Meet_with b)]
+  | _ -> []
 
 let transl_modalities ~maturity mut attrs modalities =
   let mut_modalities = mutable_implied_modalities mut attrs in
   let modalities = List.map (transl_modality ~maturity) modalities in
-  let modalities = default_modalities modalities in
-  (* mut_modalities is applied before explicit modalities *)
-  Modality.Value.Const.id
-  |> List.fold_right
-       (fun atom m -> Modality.Value.Const.compose ~then_:atom m)
-       mut_modalities
-  (* For explicit modalities:
-     type r = { x : string @@ foo bar hello }
-     is interpreted as
-     x = foo (bar (hello (r))) *)
-  |> List.fold_right
-       (fun atom m -> Modality.Value.Const.compose ~then_:atom m)
-       modalities
-
-let untransl_yielding l =
-  let areality =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Areality, Meet_with a) ->
-          Some (a : Regionality.Const.t)
-        | _ -> None)
-      l
+  (* axes listed in the order of implication. *)
+  let modalities =
+    List.stable_sort
+      (fun (Modality.Atom (ax0, _)) (Modality.Atom (ax1, _)) ->
+        Stdlib.compare (Value.Axis.P ax0) (Value.Axis.P ax1))
+      modalities
   in
-  let yielding =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Yielding, Meet_with y) ->
-          Some (y : Yielding.Const.t)
-        | _ -> None)
-      l
-  in
-  match areality, yielding with
-  | Some Global, Some Unyielding | Some Local, Some Yielding -> None
-  | _, Some yld -> Some (Modality.Atom (Comonadic Yielding, Meet_with yld))
-  | _, None -> None
-
-let untransl_contention l =
-  let visibility =
-    List.find_map
-      (function
-        | Modality.Atom (Monadic Visibility, Join_with a) ->
-          Some (a : Visibility.Const.t)
-        | _ -> None)
-      l
-  in
-  let contention =
-    List.find_map
-      (function
-        | Modality.Atom (Monadic Contention, Join_with c) ->
-          Some (c : Contention.Const.t)
-        | _ -> None)
-      l
-  in
-  match visibility, contention with
-  | Some Visibility.Const.Immutable, Some Contention.Const.Contended
-  | Some Visibility.Const.Read, Some Contention.Const.Shared
-  | Some Visibility.Const.Read_write, Some Contention.Const.Uncontended ->
-    None
-  | _, Some cnt -> Some (Modality.Atom (Monadic Contention, Join_with cnt))
-  | _, None -> None
-
-let untransl_portability l =
-  let statefulness =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Statefulness, Meet_with s) ->
-          Some (s : Statefulness.Const.t)
-        | _ -> None)
-      l
-  in
-  let portability =
-    List.find_map
-      (function
-        | Modality.Atom (Comonadic Portability, Meet_with p) ->
-          Some (p : Portability.Const.t)
-        | _ -> None)
-      l
-  in
-  match statefulness, portability with
-  | Some Statefulness.Const.Stateless, Some Portability.Const.Portable
-  | ( Some Statefulness.Const.(Observing | Stateful),
-      Some Portability.Const.Nonportable ) ->
-    None
-  | _, Some port -> Some (Modality.Atom (Comonadic Portability, Meet_with port))
-  | _, None -> None
+  let open Modality in
+  (* - mut_modalities is applied before explicit modalities.
+     - explicit modalities can override mut_modalities.
+     - For the same axis, later modalities overrides earlier modalities. *)
+  (* CR zqian: warn if an axis is specified multiple times in a modality expr. *)
+  List.fold_left
+    (fun m (Atom (ax, a) as t) ->
+      let m = Value.Const.set ax a m in
+      List.fold_left
+        (fun m (Atom (ax, a)) -> Value.Const.set ax a m)
+        m (implied_modalities t))
+    mut_modalities modalities
 
 let untransl_modalities mut attrs t =
-  let l = Modality.Value.Const.to_list t in
-  let l =
-    (* [filter_map] instead of [filter] + [append] to preserve order. *)
-    List.filter_map
-      (function
-        | Modality.Atom (Comonadic Yielding, _) -> untransl_yielding l
-        | Modality.Atom (Monadic Contention, _) -> untransl_contention l
-        | Modality.Atom (Comonadic Portability, _) -> untransl_portability l
-        | a when Modality.is_id a -> None
-        | a -> Some a)
-      l
-  in
   let mut_modalities = mutable_implied_modalities mut attrs in
-  (* polymorphic equality suffices for now. *)
-  let l = List.filter (fun x -> not @@ List.mem x mut_modalities) l in
-  List.map untransl_modality l
+  let l = Modality.Value.Const.diff mut_modalities t in
+  let implied = List.concat_map implied_modalities l in
+  l
+  |> List.filter (fun x -> not @@ List.mem x implied)
+  |> List.map untransl_modality
 
 let transl_alloc_mode modes =
   let opt = transl_mode_annots modes in
