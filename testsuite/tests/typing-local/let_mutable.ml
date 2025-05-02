@@ -131,7 +131,7 @@ let () = assert Int.(equal 42 (foo5_1 42))
 
 let foo5_2 y =  (* Assignment of local works in _local_ for loop body region *)
   let mutable x = [] in
-  for i = 1 to y do local_
+  for i = 1 to y do exclave_
     x <- local_ (i :: x)
   done;
   match x with
@@ -143,14 +143,14 @@ let () = assert Int.(equal 42 (foo5_2 42))
 let foo5_3 y = (* Assignment of local works in _local_ while body region *)
   let mutable x = y in
   let i = ref 1 in
-  while !i <= 10 do local_
+  while !i <= 10 do exclave_
     x <- (local_ (x + !i));
     i := !i + 1;
   done; x
 
 let foo5_4 y = (* Assign of local works in _local_ while cond region *)
   let mutable x = y in
-  while local_ x <- (local_ (x + 1)); x <= 100 do
+  while exclave_ x <- (local_ (x + 1)); x <= 100 do
     x <- x + x
   done; x
 

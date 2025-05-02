@@ -4048,14 +4048,14 @@ let lookup_settable_variable ?(use=true) ~loc name env =
           use_value ~use ~loc path vda;
           Instance_variable (path, mut, cl_num, Subst.Lazy.force_type_expr desc.val_type)
       | Val_mut, Pident id ->
-          let rec mode_of_locks mode = function
+          let rec mode_of_locks mode = function (* jra: surely this is incorrect *)
           | [] -> mode
           | Closure_lock _ :: _ | Escape_lock _ :: _ ->
             lookup_error loc env (Mutable_value_used_in_closure (Ident.name id))
           | Region_lock :: locks ->
             mode_of_locks
               (Mode.Value.max_with (Comonadic Areality) Mode.Regionality.global) locks
-          | Exclave_lock :: _  ->
+          | Exclave_lock :: locks  ->
             mode_of_locks (Mode.Value.disallow_left Mode.Value.max) locks
           | _ :: locks -> mode_of_locks mode locks
           in
