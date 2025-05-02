@@ -298,6 +298,16 @@ let alloc_boxedintnat_header (mode : Cmm.Alloc_mode.t) dbg =
   | Local -> Cconst_natint (boxedintnat_local_header, dbg)
 
 (* Integers *)
+let max_repr_int = max_int asr 1
+
+let min_repr_int = min_int asr 1
+
+let int_const dbg n =
+  if n <= max_repr_int && n >= min_repr_int
+  then Cconst_int ((n lsl 1) + 1, dbg)
+  else
+    Cconst_natint
+      (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n, dbg)
 
 let natint_const_untagged dbg n =
   if n > Nativeint.of_int max_int || n < Nativeint.of_int min_int
@@ -720,16 +730,22 @@ let mk_not dbg cmm =
     Cop (Csubi, [Cconst_int (4, dbg); c], dbg)
 
 let mk_compare_ints_untagged dbg a1 a2 =
-  match get_const a1, get_const a2 with
-  | Some a1, Some a2 -> Cconst_int (Nativeint.compare a1 a2, dbg)
-  | None, _ | _, None ->
-    bind "int_cmp" a2 (fun a2 ->
-        bind "int_cmp" a1 (fun a1 ->
-            let op1 = Cop (Ccmpi Cgt, [a1; a2], dbg) in
-            let op2 = Cop (Ccmpi Clt, [a1; a2], dbg) in
-            sub_int op1 op2 dbg))
+  bind "int_cmp" a2 (fun a2 ->
+      bind "int_cmp" a1 (fun a1 ->
+          let op1 = Cop (Ccmpi Cgt, [a1; a2], dbg) in
+          let op2 = Cop (Ccmpi Clt, [a1; a2], dbg) in
+          sub_int op1 op2 dbg))
 
-let mk_compare_ints dbg a1 a2 = tag_int (mk_compare_ints_untagged dbg a1 a2) dbg
+let mk_compare_ints dbg a1 a2 =
+  match a1, a2 with
+  | Cconst_int (c1, _), Cconst_int (c2, _) -> int_const dbg (Int.compare c1 c2)
+  | Cconst_natint (c1, _), Cconst_natint (c2, _) ->
+    int_const dbg (Nativeint.compare c1 c2)
+  | Cconst_int (c1, _), Cconst_natint (c2, _) ->
+    int_const dbg Nativeint.(compare (of_int c1) c2)
+  | Cconst_natint (c1, _), Cconst_int (c2, _) ->
+    int_const dbg Nativeint.(compare c1 (of_int c2))
+  | a1, a2 -> tag_int (mk_compare_ints_untagged dbg a1 a2) dbg
 
 let mk_compare_floats_gen ~tag_result ~width dbg a1 a2 =
   bind "float_cmp" a2 (fun a2 ->
@@ -1309,30 +1325,35 @@ let unboxed_packed_array_length arr dbg ~custom_ops_base_symbol
     ~elements_per_word =
   (* Checking custom_ops is needed to determine if the array contains an odd or
      even number of elements *)
-  bind "arr" arr (fun arr ->
-      let custom_ops_var = Backend_var.create_local "custom_ops" in
-      let custom_ops_index_var = Backend_var.create_local "custom_ops_index" in
-      let num_words_var = Backend_var.create_local "num_words" in
-      Clet
-        ( VP.create num_words_var,
-          (* subtract custom_operations word *)
-          sub_int (get_size arr dbg) (int ~dbg 1) dbg,
-          Clet
-            ( VP.create custom_ops_var,
-              Cop (mk_load_immut Word_int, [arr], dbg),
-              Clet
-                ( VP.create custom_ops_index_var,
-                  (* compute index into custom ops array *)
-                  lsr_int
-                    (sub_int (Cvar custom_ops_var) custom_ops_base_symbol dbg)
-                    (int ~dbg custom_ops_size_log2)
-                    dbg,
-                  (* subtract index from length in elements *)
-                  sub_int
-                    (mul_int (Cvar num_words_var)
-                       (int ~dbg elements_per_word)
-                       dbg)
-                    (Cvar custom_ops_index_var) dbg ) ) ))
+  let res =
+    bind "arr" arr (fun arr ->
+        let custom_ops_var = Backend_var.create_local "custom_ops" in
+        let custom_ops_index_var =
+          Backend_var.create_local "custom_ops_index"
+        in
+        let num_words_var = Backend_var.create_local "num_words" in
+        Clet
+          ( VP.create num_words_var,
+            (* subtract custom_operations word *)
+            sub_int (get_size arr dbg) (int ~dbg 1) dbg,
+            Clet
+              ( VP.create custom_ops_var,
+                Cop (mk_load_immut Word_int, [arr], dbg),
+                Clet
+                  ( VP.create custom_ops_index_var,
+                    (* compute index into custom ops array *)
+                    lsr_int
+                      (sub_int (Cvar custom_ops_var) custom_ops_base_symbol dbg)
+                      (int ~dbg custom_ops_size_log2)
+                      dbg,
+                    (* subtract index from length in elements *)
+                    sub_int
+                      (mul_int (Cvar num_words_var)
+                         (int ~dbg elements_per_word)
+                         dbg)
+                      (Cvar custom_ops_index_var) dbg ) ) ))
+  in
+  res
 
 let unboxed_int32_array_length =
   unboxed_packed_array_length
@@ -1344,9 +1365,12 @@ let unboxed_float32_array_length =
     ~elements_per_word:2
 
 let unboxed_int64_or_nativeint_array_length arr dbg =
-  bind "arr" arr (fun arr ->
-      (* need to subtract so as not to count the custom_operations field *)
-      sub_int (get_size arr dbg) (int ~dbg 1) dbg)
+  let res =
+    bind "arr" arr (fun arr ->
+        (* need to subtract so as not to count the custom_operations field *)
+        sub_int (get_size arr dbg) (int ~dbg 1) dbg)
+  in
+  res
 
 let unboxed_vec128_array_length arr dbg =
   let res =
@@ -4579,7 +4603,7 @@ let dls_get ~dbg = Cop (Cdls_get, [], dbg)
 let perform ~dbg eff =
   let cont =
     make_alloc dbg ~tag:Runtimetags.cont_tag
-      [Cconst_int (1, dbg); Cconst_int (1, dbg)]
+      [int_const dbg 0; int_const dbg 0]
       ~mode:Cmm.Alloc_mode.Heap
   in
   (* Rc_normal means "allow tailcalls". Preventing them here by using Rc_nontail

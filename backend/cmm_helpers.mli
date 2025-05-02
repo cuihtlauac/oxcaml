@@ -66,6 +66,9 @@ val closure_info' :
 (** Wrappers *)
 val alloc_infix_header : int -> Debuginfo.t -> expression
 
+(** Make an integer constant from the given integer (tags the integer) *)
+val int_const : Debuginfo.t -> int -> expression
+
 (** Arithmetical operations on integers *)
 val add_int : expression -> expression -> Debuginfo.t -> expression
 
