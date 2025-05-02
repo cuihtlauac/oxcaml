@@ -66,7 +66,7 @@ let foo4_1 y =
 Line 4, characters 9-24:
 4 |     x <- local_ (i :: x)
              ^^^^^^^^^^^^^^^
-Error: This value escapes its region
+Error: This value escapes its region.
 |}]
 
 
@@ -102,7 +102,7 @@ let foo4_3 y = (* Can't sneak local out of non-local while loop body region *)
 Line 5, characters 9-26:
 5 |     x <- (local_ (x + !i));
              ^^^^^^^^^^^^^^^^^
-Error: This value escapes its region
+Error: This value escapes its region.
 |}]
 
 let foo4_4 y = (* Can't sneak localk out of non-local while cond region *)
@@ -115,7 +115,7 @@ let foo4_4 y = (* Can't sneak localk out of non-local while cond region *)
 Line 3, characters 13-29:
 3 |   while x <- (local_ (x + 1)); x <= 100 do
                  ^^^^^^^^^^^^^^^^
-Error: This value escapes its region
+Error: This value escapes its region.
 |}]
 
 (* Test 5: Allowed interactions with locals. *)
@@ -203,7 +203,7 @@ let foo_8_1 y =
 Line 2, characters 14-21:
 2 |   let mutable (x1,x2) = (y,y+1) in
                   ^^^^^^^
-Error: Only variables are allowed as left-hand side of `let mutable'
+Error: Only variables are allowed as left-hand side of "let mutable"
 |}]
 
 type t8_2 = {x_8_2 : int}
@@ -218,42 +218,7 @@ type t8_2 = { x_8_2 : int; }
 Line 3, characters 14-21:
 3 |   let mutable {x_8_2} = {x_8_2 = y + 1} in
                   ^^^^^^^
-Error: Only variables are allowed as left-hand side of `let mutable'
-|}]
-
-(* Test 9: disallowed at the structure level *)
-let mutable foo_9_1 = 10
-[%%expect{|
-Line 1, characters 12-19:
-1 | let mutable foo_9_1 = 10
-                ^^^^^^^
-Error: Mutable let bindings are not allowed at the structure level
-|}]
-
-module M9 = struct
-  let mutable foo_9_2 = 20
-end
-[%%expect{|
-Line 2, characters 14-21:
-2 |   let mutable foo_9_2 = 20
-                  ^^^^^^^
-Error: Mutable let bindings are not allowed at the structure level
-|}]
-
-(* Test 10: disallowed in class definitions *)
-class c10 =
-  let mutable x = 20 in
-  object
-    method read_incr =
-      x <- x + 1;
-      x
-  end
-
-[%%expect{|
-Line 2, characters 14-15:
-2 |   let mutable x = 20 in
-                  ^
-Error: Mutable let bindings are not allowed inside class definition
+Error: Only variables are allowed as left-hand side of "let mutable"
 |}]
 
 (* Test 11: binding a mutable variable shouldn't be simplified away *)

@@ -473,8 +473,8 @@ let obj_direct () =
 
 let let_mutable_loop () =
   let mutable x = [] in
-  for i = 0 to 10 do local_
-    x <- i :: x
+  for i = 0 to 10 do exclave_
+    x <- stack_ (i :: x)
   done;
   ignore_local x
 

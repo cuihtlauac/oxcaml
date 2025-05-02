@@ -691,7 +691,8 @@ let val_of_let_bindings ~loc lbs =
       lbs.lbs_bindings
   in
   if lbs.lbs_mutable = Mutable
-  then not_expecting loc "mutable"; (* jra: is this the best way to do this? *)
+  then raise (Syntaxerr.Error
+    (Syntaxerr.Let_mutable_not_allowed_at_structure_level (make_loc loc)));
   let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
   match lbs.lbs_extension with
   | None -> str
@@ -719,7 +720,8 @@ let class_of_let_bindings ~loc lbs body =
       lbs.lbs_bindings
   in
     if lbs.lbs_mutable = Mutable
-    then not_expecting loc "mutable"; (* jra: is this the best way to do this? *)
+    then raise (Syntaxerr.Error
+      (Syntaxerr.Let_mutable_not_allowed_in_class_definition (make_loc loc)));
     (* Our use of let_bindings(no_ext) guarantees the following: *)
     assert (lbs.lbs_extension = None);
     mkclass ~loc (Pcl_let (lbs.lbs_rec, List.rev bindings, body))
