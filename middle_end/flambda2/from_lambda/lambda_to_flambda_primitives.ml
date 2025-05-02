@@ -1593,7 +1593,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
     [ Binary
         ( Array_load (Values, Values, convert_field_read_semantics sem),
           Prim obj,
-          field ) ]
+          convert_index field ~index_kind:Ptagged_int_index ) ]
   | ( Psetfield_computed (imm_or_pointer, init_or_assign),
       [[obj]; [field]; [value]] ) ->
     (* We are reinterpreting a block(/object) as a value array, so it needs to
