@@ -116,6 +116,10 @@ val size_float : int
 
 val size_vec128 : int
 
+val size_vec256 : int
+
+val size_vec512 : int
+
 val allow_unaligned_access : bool
 
 val division_crashes_on_overflow : bool

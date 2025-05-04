@@ -61,9 +61,9 @@ type data_type =
   | NONE
   | REAL4 | REAL8 (* floating point values *)
   | BYTE | WORD | DWORD | QWORD (* integer values *)
-  | VEC128 (* 128-bit vector values (float & integer) *)
-  | VEC256 (* 256-bit vector values (float & integer) *)
-  | VEC512 (* 512-bit vector values (float & integer) *)
+  | VEC128
+  | VEC256
+  | VEC512
   | NEAR | PROC
 
 type reg64 =

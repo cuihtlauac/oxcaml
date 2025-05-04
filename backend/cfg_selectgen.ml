@@ -96,7 +96,8 @@ module Make (Target : Cfg_selectgen_target_intf.S) = struct
     let module EC = SU.Effect_and_coeffect in
     match exp with
     | Cconst_int _ | Cconst_natint _ | Cconst_float32 _ | Cconst_float _
-    | Cconst_symbol _ | Cconst_vec128 _ | Cconst_vec256 _ | Cconst_vec512 _ | Cvar _ ->
+    | Cconst_symbol _ | Cconst_vec128 _ | Cconst_vec256 _ | Cconst_vec512 _
+    | Cvar _ ->
       EC.none
     | Ctuple el -> EC.join_list_map el effects_of
     | Clet (_id, arg, body) -> EC.join (effects_of arg) (effects_of body)
@@ -827,7 +828,8 @@ module Make (Target : Cfg_selectgen_target_intf.S) = struct
     | Ccatch (rec_flag, handlers, e1) ->
       emit_tail_catch env sub_cfg rec_flag handlers e1
     | Cop _ | Cconst_int _ | Cconst_natint _ | Cconst_float32 _ | Cconst_float _
-    | Cconst_symbol _ | Cconst_vec128 _ | Cvar _ | Ctuple _ | Cexit _ ->
+    | Cconst_symbol _ | Cconst_vec128 _ | Cconst_vec256 _ | Cconst_vec512 _
+    | Cvar _ | Ctuple _ | Cexit _ ->
       emit_return env sub_cfg exp (SU.pop_all_traps env)
 
   and emit_expr_raise (env : SU.environment) sub_cfg k
@@ -1178,7 +1180,7 @@ module Make (Target : Cfg_selectgen_target_intf.S) = struct
             match reg.Reg.typ with
             | Addr -> assert false
             | Valx2 -> Misc.fatal_error "Unexpected machtype_component Valx2"
-            | Val | Int | Float | Vec128 | Float32 -> ())
+            | Val | Int | Float | Vec128 | Vec256 | Vec512 | Float32 -> ())
           src;
         SU.insert_moves env sub_cfg src tmp_regs;
         SU.insert_moves env sub_cfg tmp_regs (Array.concat handler.regs);

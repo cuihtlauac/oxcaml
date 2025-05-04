@@ -566,6 +566,8 @@ let transl_builtin name args dbg typ_res =
         | Cconst_float32 (_, _)
         | Cconst_float (_, _)
         | Cconst_vec128 (_, _)
+        | Cconst_vec256 (_, _)
+        | Cconst_vec512 (_, _)
         | Cconst_symbol (_, _)
         | Cvar _
         | Clet (_, _, _)

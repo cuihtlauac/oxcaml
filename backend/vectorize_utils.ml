@@ -27,13 +27,13 @@ module Width_in_bits = struct
     match b with Thirtytwo -> W32 | Sixtyfour -> W64 | Word -> W64
 
   let to_int t =
-    match t with 
+    match t with
     | W512 -> 512
-    | W256 -> 256 
-    | W128 -> 128 
-    | W64 -> 64 
-    | W32 -> 32 
-    | W16 -> 16 
+    | W256 -> 256
+    | W128 -> 128
+    | W64 -> 64
+    | W32 -> 32
+    | W16 -> 16
     | W8 -> 8
 
   let equal t1 t2 =
@@ -128,9 +128,11 @@ let vectorizable_machtypes (r1 : Reg.t) (r2 : Reg.t) =
        [Addr], we could generalize [machtype], but for simplicity do not
        vectorize [Addr]. *)
     false
-  | (Vec128 | Vec256 | Vec512 | Valx2), (Val | Int | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2)
+  | ( (Vec128 | Vec256 | Vec512 | Valx2),
+      (Val | Int | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2) )
   | (Val | Int | Float | Float32), (Vec128 | Vec256 | Vec512 | Valx2) ->
-    Misc.fatal_errorf "Unexpected vector machtype Vec128, Vec256, Vec512, or Valx2: %a %a"
+    Misc.fatal_errorf
+      "Unexpected vector machtype Vec128, Vec256, Vec512, or Valx2: %a %a"
       Printreg.reg r1 Printreg.reg r2
   | Val, Val -> true
   | Val, (Int | Float | Float32) | (Int | Float | Float32), Val -> false

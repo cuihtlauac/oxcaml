@@ -59,12 +59,25 @@ let of_int_of_kind (kind : Flambda_kind.t) i =
   | Naked_number Naked_nativeint -> naked_nativeint (Targetint_32_64.of_int i)
   | Naked_number Naked_vec128 ->
     let i = Int64.of_int i in
-    naked_vec128 (Vector_types.Vec128.Bit_pattern.of_bits { high = i; low = i })
+    naked_vec128
+      (Vector_types.Vec128.Bit_pattern.of_bits { word0 = i; word1 = i })
   | Naked_number Naked_vec256 ->
     let i = Int64.of_int i in
-    naked_vec256 (Vector_types.Vec256.Bit_pattern.of_bits { highest = i; high = i; low = i; lowest = i })
+    naked_vec256
+      (Vector_types.Vec256.Bit_pattern.of_bits
+         { word0 = i; word1 = i; word2 = i; word3 = i })
   | Naked_number Naked_vec512 ->
     let i = Int64.of_int i in
-    naked_vec512 (Vector_types.Vec512.Bit_pattern.of_bits { part7 = i; part6 = i; part5 = i; part4 = i; part3 = i; part2 = i; part1 = i; part0 = i })
+    naked_vec512
+      (Vector_types.Vec512.Bit_pattern.of_bits
+         { word0 = i;
+           word1 = i;
+           word2 = i;
+           word3 = i;
+           word4 = i;
+           word5 = i;
+           word6 = i;
+           word7 = i
+         })
   | Region | Rec_info ->
     Misc.fatal_errorf "Invalid kind %a" Flambda_kind.print kind

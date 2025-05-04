@@ -14,6 +14,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Kind = struct
+  type t =
+    | Vec128
+    | Vec256
+    | Vec512
+end
+
 module type Vector_width = sig
   val size_in_int64s : int
 end
@@ -65,32 +72,29 @@ module Vec128 = struct
     end)
 
     type bits =
-      { high : int64;
-        low : int64
+      { word0 : int64;
+        word1 : int64
       }
 
     let to_bits t =
       match to_int64_array t with
-      | [| high; low |] -> { high; low }
+      | [| word0; word1 |] -> { word0; word1 }
       | _ -> Misc.fatal_error "Vec128.to_bits: wrong size vector"
 
-    let of_bits { high; low } = of_int64_array [| high; low |]
+    let of_bits { word0; word1 } = of_int64_array [| word0; word1 |]
   end
-  
+
   module Set = struct
-    include Set.Make(Bit_pattern)
-    
+    include Set.Make (Bit_pattern)
+
     let print ppf s =
       Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
-      
-    let to_string s =
-      Printf.sprintf "<vec set with %d elements>" (cardinal s)
-      
-    let union_list sets =
-      List.fold_left union empty sets
-      
-    let get_singleton s =
-      if cardinal s = 1 then Some (choose s) else None
+
+    let to_string s = Printf.sprintf "<vec set with %d elements>" (cardinal s)
+
+    let union_list sets = List.fold_left union empty sets
+
+    let get_singleton s = if cardinal s = 1 then Some (choose s) else None
   end
 end
 
@@ -101,35 +105,32 @@ module Vec256 = struct
     end)
 
     type bits =
-      { highest : int64;
-        high : int64;
-        low : int64;
-        lowest : int64
+      { word0 : int64;
+        word1 : int64;
+        word2 : int64;
+        word3 : int64
       }
 
     let to_bits t =
       match to_int64_array t with
-      | [| highest; high; low; lowest |] -> { highest; high; low; lowest }
+      | [| word0; word1; word2; word3 |] -> { word0; word1; word2; word3 }
       | _ -> Misc.fatal_error "Vec256.to_bits: wrong size vector"
 
-    let of_bits { highest; high; low; lowest } = 
-      of_int64_array [| highest; high; low; lowest |]
+    let of_bits { word0; word1; word2; word3 } =
+      of_int64_array [| word0; word1; word2; word3 |]
   end
-  
+
   module Set = struct
-    include Set.Make(Bit_pattern)
-    
+    include Set.Make (Bit_pattern)
+
     let print ppf s =
       Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
-      
-    let to_string s =
-      Printf.sprintf "<vec set with %d elements>" (cardinal s)
-      
-    let union_list sets =
-      List.fold_left union empty sets
-      
-    let get_singleton s =
-      if cardinal s = 1 then Some (choose s) else None
+
+    let to_string s = Printf.sprintf "<vec set with %d elements>" (cardinal s)
+
+    let union_list sets = List.fold_left union empty sets
+
+    let get_singleton s = if cardinal s = 1 then Some (choose s) else None
   end
 end
 
@@ -140,32 +141,37 @@ module Vec512 = struct
     end)
 
     type bits =
-      { part7 : int64; part6 : int64; part5 : int64; part4 : int64;
-        part3 : int64; part2 : int64; part1 : int64; part0 : int64 }
+      { word0 : int64;
+        word1 : int64;
+        word2 : int64;
+        word3 : int64;
+        word4 : int64;
+        word5 : int64;
+        word6 : int64;
+        word7 : int64
+      }
 
     let to_bits t =
       match to_int64_array t with
-      | [| part7; part6; part5; part4; part3; part2; part1; part0 |] -> 
-          { part7; part6; part5; part4; part3; part2; part1; part0 }
+      | [| word0; word1; word2; word3; word4; word5; word6; word7 |] ->
+        { word0; word1; word2; word3; word4; word5; word6; word7 }
       | _ -> Misc.fatal_error "Vec512.to_bits: wrong size vector"
 
-    let of_bits { part7; part6; part5; part4; part3; part2; part1; part0 } = 
-      of_int64_array [| part7; part6; part5; part4; part3; part2; part1; part0 |]
+    let of_bits { word0; word1; word2; word3; word4; word5; word6; word7 } =
+      of_int64_array
+        [| word0; word1; word2; word3; word4; word5; word6; word7 |]
   end
-  
+
   module Set = struct
-    include Set.Make(Bit_pattern)
-    
+    include Set.Make (Bit_pattern)
+
     let print ppf s =
       Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
-      
-    let to_string s =
-      Printf.sprintf "<vec set with %d elements>" (cardinal s)
-      
-    let union_list sets =
-      List.fold_left union empty sets
-      
-    let get_singleton s =
-      if cardinal s = 1 then Some (choose s) else None
+
+    let to_string s = Printf.sprintf "<vec set with %d elements>" (cardinal s)
+
+    let union_list sets = List.fold_left union empty sets
+
+    let get_singleton s = if cardinal s = 1 then Some (choose s) else None
   end
 end

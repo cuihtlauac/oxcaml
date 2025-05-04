@@ -65,7 +65,9 @@ val naked_int64 : t
 val naked_nativeint : t
 
 val naked_vec128 : t
+
 val naked_vec256 : t
+
 val naked_vec512 : t
 
 val region : t
@@ -261,9 +263,9 @@ module With_subkind : sig
   val naked_nativeint : t
 
   val naked_vec128 : t
-  
+
   val naked_vec256 : t
-  
+
   val naked_vec512 : t
 
   val region : t
@@ -291,6 +293,10 @@ module With_subkind : sig
   val generic_array : t
 
   val unboxed_vec128_array : t
+
+  val unboxed_vec256_array : t
+
+  val unboxed_vec512_array : t
 
   val unboxed_product_array : t
 

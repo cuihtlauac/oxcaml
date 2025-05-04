@@ -32,9 +32,8 @@ open Misc
    of these infos *)
 
 (* Import machtype directly from [Cmm] to maintain compatibility. *)
-type machtype_component = Cmm.machtype_component = 
-  | Val | Addr | Int | Float | Vec128 | Vec256 | Vec512 | Float32 | Valx2
-type machtype = Cmm.machtype
+type machtype_component = Val | Addr | Int | Float | Vec128 | Vec256 | Vec512 | Float32 | Valx2
+type machtype = machtype_component array
 
 (* [alloc_mode] should be isomorphic to [Cmm.Alloc_mode.t],
    but due to a cyclic dependency we can not use definitions from [Cmm] here. *)

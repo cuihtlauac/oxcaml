@@ -341,7 +341,7 @@ let is_pure = function
   | Floatop _ -> true
   | Csel _ -> true
   | Reinterpret_cast
-      ( V128_of_v128 | V256_of_v256 | V512_of_v512 | Float32_of_float | Float32_of_int32 | Float_of_float32
+      ( V128_of_v128 | Float32_of_float | Float32_of_int32 | Float_of_float32
       | Float_of_int64 | Int64_of_float | Int32_of_float32 ) ->
     true
   | Static_cast _ -> true
@@ -412,9 +412,11 @@ let dump ppf op =
   | Const_vec128 { word0; word1 } ->
     Format.fprintf ppf "const vec128 %016Lx:%016Lx" word1 word0
   | Const_vec256 { word0; word1; word2; word3 } ->
-    Format.fprintf ppf "const vec256 %016Lx:%016Lx:%016Lx:%016Lx" word3 word2 word1 word0
+    Format.fprintf ppf "const vec256 %016Lx:%016Lx:%016Lx:%016Lx" word3 word2
+      word1 word0
   | Const_vec512 { word0; word1; word2; word3; word4; word5; word6; word7 } ->
-    Format.fprintf ppf "const vec512 %016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx" 
+    Format.fprintf ppf
+      "const vec512 %016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx"
       word7 word6 word5 word4 word3 word2 word1 word0
   | Stackoffset n -> Format.fprintf ppf "stackoffset %d" n
   | Load _ -> Format.fprintf ppf "load"

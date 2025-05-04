@@ -16,6 +16,13 @@
 
 (** SIMD vector numeric type layouts. *)
 
+module Kind : sig
+  type t =
+    | Vec128
+    | Vec256
+    | Vec512
+end
+
 module Vec128 : sig
   module Bit_pattern : sig
     (** 128-bit value whose comparison and equality relations are lexicographically
@@ -26,24 +33,24 @@ module Vec128 : sig
     val zero : t
 
     type bits =
-      { high : int64;
-        low : int64
+      { word0 : int64;
+        word1 : int64
       }
 
     val to_bits : t -> bits
 
     val of_bits : bits -> t
   end
-  
+
   module Set : sig
     include Set.S with type elt = Bit_pattern.t
-    
+
     val print : Format.formatter -> t -> unit
-    
+
     val to_string : t -> string
-    
+
     val union_list : t list -> t
-    
+
     val get_singleton : t -> elt option
   end
 end
@@ -58,26 +65,26 @@ module Vec256 : sig
     val zero : t
 
     type bits =
-      { highest : int64;
-        high : int64;
-        low : int64;
-        lowest : int64
+      { word0 : int64;
+        word1 : int64;
+        word2 : int64;
+        word3 : int64
       }
 
     val to_bits : t -> bits
 
     val of_bits : bits -> t
   end
-  
+
   module Set : sig
     include Set.S with type elt = Bit_pattern.t
-    
+
     val print : Format.formatter -> t -> unit
-    
+
     val to_string : t -> string
-    
+
     val union_list : t list -> t
-    
+
     val get_singleton : t -> elt option
   end
 end
@@ -92,23 +99,30 @@ module Vec512 : sig
     val zero : t
 
     type bits =
-      { part7 : int64; part6 : int64; part5 : int64; part4 : int64;
-        part3 : int64; part2 : int64; part1 : int64; part0 : int64 }
+      { word0 : int64;
+        word1 : int64;
+        word2 : int64;
+        word3 : int64;
+        word4 : int64;
+        word5 : int64;
+        word6 : int64;
+        word7 : int64
+      }
 
     val to_bits : t -> bits
 
     val of_bits : bits -> t
   end
-  
+
   module Set : sig
     include Set.S with type elt = Bit_pattern.t
-    
+
     val print : Format.formatter -> t -> unit
-    
+
     val to_string : t -> string
-    
+
     val union_list : t list -> t
-    
+
     val get_singleton : t -> elt option
   end
 end

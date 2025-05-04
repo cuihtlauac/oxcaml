@@ -17,7 +17,7 @@
 
 [@@@ocaml.warning "+a-40-41-42"]
 
-type machtype_component = 
+type machtype_component = Cmx_format.machtype_component =
   | Val
   | Addr
   | Int
@@ -69,7 +69,9 @@ val typ_float : machtype
 val typ_float32 : machtype
 
 val typ_vec128 : machtype
+
 val typ_vec256 : machtype
+
 val typ_vec512 : machtype
 
 (** Least upper bound of two [machtype_component]s. *)
@@ -241,7 +243,7 @@ type vec256_type =
   | Int64x4
   | Float32x8
   | Float64x4
-  
+
 type vec512_type =
   | Int8x64
   | Int16x32
@@ -283,8 +285,6 @@ type reinterpret_cast =
   | Float32_of_int32
   | Int32_of_float32
   | V128_of_v128 (* Converts between vector types of the same width. *)
-  | V256_of_v256 (* Converts between 256-bit vector types. *)
-  | V512_of_v512 (* Converts between 512-bit vector types. *)
 
 (* These casts may require a particular value-preserving operation, e.g.
    truncating a float to an int. *)
@@ -295,10 +295,6 @@ type static_cast =
   | Float32_of_float
   | V128_of_scalar of vec128_type
   | Scalar_of_v128 of vec128_type
-  | V256_of_scalar of vec256_type
-  | Scalar_of_v256 of vec256_type
-  | V512_of_scalar of vec512_type
-  | Scalar_of_v512 of vec512_type
 
 module Alloc_mode : sig
   type t =
@@ -450,14 +446,14 @@ type vec128_bits =
   { word0 : int64;
     word1 : int64
   }
-  
+
 type vec256_bits =
   { word0 : int64;
     word1 : int64;
     word2 : int64;
     word3 : int64
   }
-  
+
 type vec512_bits =
   { word0 : int64;
     word1 : int64;

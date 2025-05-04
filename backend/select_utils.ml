@@ -205,8 +205,6 @@ let oper_result_type = function
   | Ccsel ty -> ty
   | Creinterpret_cast Value_of_int -> typ_val
   | Creinterpret_cast V128_of_v128 -> typ_vec128
-  | Creinterpret_cast V256_of_v256 -> typ_vec256
-  | Creinterpret_cast V512_of_v512 -> typ_vec512
   | Creinterpret_cast (Float_of_int64 | Float_of_float32) -> typ_float
   | Creinterpret_cast (Float32_of_int32 | Float32_of_float) -> typ_float32
   | Creinterpret_cast (Int_of_value | Int64_of_float | Int32_of_float32) ->
@@ -524,11 +522,11 @@ module Stack_offset_and_exn = struct
     | Op (Stackoffset n) -> stack_offset + n, traps
     | Op
         ( Move | Spill | Reload | Const_int _ | Const_float _ | Const_float32 _
-        | Const_symbol _ | Const_vec128 _ | Const_vec256 _ | Const_vec512 _ | Load _ | Store _ | Intop _
-        | Intop_imm _ | Intop_atomic _ | Floatop _ | Csel _ | Static_cast _
-        | Reinterpret_cast _ | Probe_is_enabled _ | Opaque | Begin_region
-        | End_region | Specific _ | Name_for_debugger _ | Dls_get | Poll
-        | Alloc _ )
+        | Const_symbol _ | Const_vec128 _ | Const_vec256 _ | Const_vec512 _
+        | Load _ | Store _ | Intop _ | Intop_imm _ | Intop_atomic _ | Floatop _
+        | Csel _ | Static_cast _ | Reinterpret_cast _ | Probe_is_enabled _
+        | Opaque | Begin_region | End_region | Specific _ | Name_for_debugger _
+        | Dls_get | Poll | Alloc _ )
     | Reloadretaddr | Prologue ->
       stack_offset, traps
     | Stack_check _ ->
