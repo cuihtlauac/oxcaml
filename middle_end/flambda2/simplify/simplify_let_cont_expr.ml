@@ -1041,7 +1041,8 @@ and prepare_dacc_for_handlers dacc ~env_at_fork ~params ~is_recursive
        enabling unboxing for those (while avoiding re-unboxing parameters that
        have already been unboxed). *)
     Join_points.compute_handler_env uses ~params ~is_recursive ~env_at_fork
-      ~consts_lifted_during_body ~lifted_cont_extra_params_and_args
+      ~consts_lifted_after_fork:consts_lifted_during_body
+      ~previous_extra_params_and_args:lifted_cont_extra_params_and_args
   in
   let code_age_relation = TE.code_age_relation (DA.typing_env dacc) in
   let handler_env =
@@ -1137,7 +1138,7 @@ and simplify_single_recursive_handler ~simplify_expr cont_uses_env_so_far
      uses (needed for the recursive continuation handlers). *)
   let handler_env =
     assert (not (DE.at_unit_toplevel denv_to_reset));
-    DE.add_parameters_with_unknown_types denv_to_reset params
+    DE.add_parameters_with_unknown_types ~extra:false denv_to_reset params
   in
   let handler_env = LCS.add_to_denv handler_env consts_lifted_during_body in
   let code_age_relation = TE.code_age_relation (DA.typing_env dacc) in
@@ -1475,7 +1476,11 @@ let simplify_let_cont0 ~(simplify_expr : _ Simplify_common.expr_simplifier) dacc
       Lifted_cont_params.length
         (DE.variables_defined_in_current_continuation denv_for_body)
     in
-    DE.add_lifting_cost lifting_cost denv_for_body
+    let bound_continuations =
+      Original_handlers.bound_continuations data.handlers
+    in
+    DE.add_lifting_cost lifting_cost
+      (DE.define_continuations denv_for_body bound_continuations)
   in
   let dacc = DA.with_denv dacc denv_for_body in
   let body = data.body in
