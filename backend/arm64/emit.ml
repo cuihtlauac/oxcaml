@@ -251,6 +251,7 @@ end = struct
     | Float -> Arm64_ast.Reg.reg_d index
     | Float32 -> Arm64_ast.Reg.reg_s index
     | Vec128 | Valx2 -> Arm64_ast.Reg.reg_q index
+    | Vec256 | Vec512 -> Misc.fatal_error "arm64: got 256/512 bit vector"
 
   let emit_reg_v2s reg = reg_v2s (reg_index reg)
 
@@ -272,6 +273,7 @@ end = struct
     | Float -> reg_d index
     | Float32 -> reg_s index
     | Vec128 | Valx2 -> reg_q index
+    | Vec256 | Vec512 -> Misc.fatal_error "arm64: got 256/512 bit vector"
 
   let reg_x_30 = reg_x 30
 
@@ -525,7 +527,9 @@ let record_frame_label live dbg =
         Misc.fatal_errorf "Unexpected Valx2 type of reg %a" Printreg.reg r
       | { typ = Val; loc = Unknown; _ } as r ->
         Misc.fatal_errorf "Unknown location %a" Printreg.reg r
-      | { typ = Int | Float | Float32 | Vec128; _ } -> ())
+      | { typ = Int | Float | Float32 | Vec128; _ } -> ()
+      | { typ = Vec256 | Vec512; _ } ->
+        Misc.fatal_error "arm64: got 256/512 bit vector")
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size ())
     ~live_offset:!live_offset dbg;
@@ -798,10 +802,10 @@ let emit_float_literal (f, lbl) =
   emit_printf "%a:\n" femit_label lbl;
   emit_float64_directive_with_comment f
 
-let emit_vec128_literal (({ high; low } : Cmm.vec128_bits), lbl) =
+let emit_vec128_literal (({ word0; word1 } : Cmm.vec128_bits), lbl) =
   emit_printf "%a:\n" femit_label lbl;
-  emit_float64_directive_with_comment low;
-  emit_float64_directive_with_comment high
+  emit_float64_directive_with_comment word1;
+  emit_float64_directive_with_comment word0
 
 let emit_literals () =
   emit_literals float_literals size_float emit_float_literal;
@@ -867,6 +871,8 @@ let num_call_gc_points instr =
     | Lswitch _ | Ladjust_stack_offset _ | Lpushtrap _ | Lraise _
     | Lstackcheck _ ->
       loop instr.next call_gc
+    | Lop (Const_vec256 _ | Const_vec512 _) ->
+      Misc.fatal_error "arm64: got 256/512 bit vector"
   in
   loop instr 0
 
@@ -931,6 +937,8 @@ module BR = Branch_relaxation.Make (struct
       | Lcall_op _ | Llabel _ | Lbranch _ | Lswitch _ | Ladjust_stack_offset _
       | Lpushtrap _ | Lraise _ | Lstackcheck _ ->
         None
+      | Lop (Const_vec256 _ | Const_vec512 _) ->
+        Misc.fatal_error "arm64: got 256/512 bit vector"
   end
 
   let offset_pc_at_branch = 0
@@ -949,6 +957,9 @@ module BR = Branch_relaxation.Make (struct
     | Thirtytwo_unsigned | Thirtytwo_signed | Word_int | Word_val | Double
     | Onetwentyeight_unaligned | Onetwentyeight_aligned ->
       1
+    | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
+    | Fivetwelve_unaligned ->
+      Misc.fatal_error "arm64: got 256/512 bit vector"
 
   let instr_size = function
     | Lend -> 0
@@ -958,6 +969,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Const_float32 _) -> 2
     | Lop (Const_float _) -> 2
     | Lop (Const_vec128 _) -> 2
+    | Lop (Const_vec256 _ | Const_vec512 _) ->
+      Misc.fatal_error "arm64: got 256/512 bit vector"
     | Lop (Const_symbol _) -> 2
     | Lop (Intop_atomic _) ->
       (* Never generated; builtins are not yet translated to atomics *)
@@ -989,6 +1002,10 @@ module BR = Branch_relaxation.Make (struct
             | Onetwentyeight_unaligned | Onetwentyeight_aligned ),
             _ ) ->
           0
+        | ( ( Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
+            | Fivetwelve_unaligned ),
+            _ ) ->
+          Misc.fatal_error "arm64: got 256/512 bit vector"
       and single = memory_access_size memory_chunk in
       based + barrier + single
     | Lop (Alloc { mode = Local; _ }) -> 9
@@ -1269,6 +1286,8 @@ let move (src : Reg.t) (dst : Reg.t) =
       DSL.ins I.FMOV [| DSL.emit_reg dst; DSL.emit_reg src |]
     | (Vec128 | Valx2), Reg _, (Vec128 | Valx2), Reg _ ->
       DSL.ins I.MOV [| DSL.emit_reg_v2d dst; DSL.emit_reg_v2d src |]
+    | (Vec256 | Vec512), _, _, _ | _, _, (Vec256 | Vec512), _ ->
+      Misc.fatal_error "arm64: got 256/512 bit vector"
     | (Int | Val | Addr), Reg _, (Int | Val | Addr), Reg _ ->
       DSL.ins I.MOV [| DSL.emit_reg dst; DSL.emit_reg src |]
     | _, Reg _, _, Stack _ ->
@@ -1444,15 +1463,17 @@ let emit_instr i =
     else
       let lbl = float_literal f in
       emit_load_literal i.res.(0) lbl
-  | Lop (Const_vec128 ({ high; low } as l)) -> (
+  | Lop (Const_vec128 ({ word0; word1 } as l)) -> (
     DSL.check_reg Vec128 i.res.(0);
-    match high, low with
+    match word0, word1 with
     | 0x0000_0000_0000_0000L, 0x0000_0000_0000_0000L ->
       let dst = DSL.emit_reg_v2d i.res.(0) in
       DSL.ins I.MOVI [| dst; DSL.imm 0 |]
     | _ ->
       let lbl = vec128_literal l in
       emit_load_literal i.res.(0) lbl)
+  | Lop (Const_vec256 _ | Const_vec512 _) ->
+    Misc.fatal_error "arm64: got 256/512 bit vector"
   | Lop (Const_symbol s) -> emit_load_symbol_addr i.res.(0) s.sym_name
   | Lcall_op Lcall_ind ->
     DSL.ins I.BLR [| DSL.emit_reg i.arg.(0) |];
@@ -1570,7 +1591,10 @@ let emit_instr i =
       (* CR gyorsh: check alignment *)
       DSL.check_reg Vec128 dst;
       DSL.ins I.LDR
-        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |])
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+    | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
+    | Fivetwelve_unaligned ->
+      Misc.fatal_error "arm64: got 256/512 bit vector")
   | Lop (Store (size, addr, assignment)) -> (
     (* NB: assignments other than Word_int and Word_val do not follow the
        Multicore OCaml memory model and so do not emit a barrier *)
@@ -1607,7 +1631,10 @@ let emit_instr i =
     | Onetwentyeight_aligned | Onetwentyeight_unaligned ->
       (* CR gyorsh: check alignment *)
       DSL.check_reg Vec128 src;
-      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr base |])
+      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr base |]
+    | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
+    | Fivetwelve_unaligned ->
+      Misc.fatal_error "arm64: got 256/512 bit vector")
   | Lop (Alloc { bytes = n; dbginfo; mode = Heap }) ->
     assembly_code_for_allocation i ~n ~local:false ~far:false ~dbginfo
   | Lop (Specific (Ifar_alloc { bytes = n; dbginfo })) ->
@@ -2093,9 +2120,10 @@ let emit_item (d : Cmm.data_item) =
   | Cint n -> emit_printf "\t.8byte\t%Ld\n" (Int64.of_nativeint n)
   | Csingle f -> emit_float32_directive_with_comment (Int32.bits_of_float f)
   | Cdouble f -> emit_float64_directive_with_comment (Int64.bits_of_float f)
-  | Cvec128 { high; low } ->
-    emit_float64_directive_with_comment low;
-    emit_float64_directive_with_comment high
+  | Cvec128 { word0; word1 } ->
+    emit_float64_directive_with_comment word1;
+    emit_float64_directive_with_comment word0
+  | Cvec256 _ | Cvec512 _ -> Misc.fatal_error "arm64: got 256/512 bit vector"
   | Csymbol_address s -> emit_printf "\t.8byte\t%a\n" femit_symbol s.sym_name
   | Csymbol_offset (s, o) ->
     emit_printf "\t.8byte\t%a+%a\n" femit_symbol s.sym_name femit_int o

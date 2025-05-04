@@ -205,7 +205,6 @@ let size_addr = 8
 let size_int = 8
 let size_float = 8
 
-(* Vector sizes *)
 let size_vec128 = 16
 let size_vec256 = 32
 let size_vec512 = 64

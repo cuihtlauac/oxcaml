@@ -245,11 +245,10 @@ let size_component : machtype_component -> int = function
        Note that packed float32# arrays are handled via a separate path. *)
     Arch.size_float
   | Vec128 -> Arch.size_vec128
-  | Vec256 -> Arch.size_vec256
-  | Vec512 -> Arch.size_vec512
   | Valx2 ->
     assert (Int.equal (Arch.size_addr * 2) Arch.size_vec128);
     Arch.size_vec128
+  | Vec256 | Vec512 -> Misc.fatal_error "arm64: got 256/512 bit vector"
 
 let size_machtype mty =
   let size = ref 0 in
@@ -268,8 +267,8 @@ let size_expr env exp =
          Note that packed float32# arrays are handled via a separate path. *)
       Arch.size_float
     | Cconst_vec128 _ -> Arch.size_vec128
-    | Cconst_vec256 _ -> Arch.size_vec256
-    | Cconst_vec512 _ -> Arch.size_vec512
+    | Cconst_vec256 _ | Cconst_vec512 _ ->
+      Misc.fatal_error "arm64: got 256/512 bit vector"
     | Cvar id -> (
       try V.Map.find id localenv
       with Not_found -> (

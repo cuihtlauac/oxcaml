@@ -38,6 +38,9 @@ let is_offset chunk n =
      | Word_int | Word_val | Double -> n land 7 = 0 && n lsr 3 < 0x1000
      | Onetwentyeight_aligned | Onetwentyeight_unaligned ->
        n land 15 = 0 && n lsr 4 < 0x1000
+     | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
+     | Fivetwelve_unaligned ->
+       Misc.fatal_error "arm64: got 256/512 bit vector"
 
 let is_logical_immediate_int n = Arch.is_logical_immediate (Nativeint.of_int n)
 
@@ -222,7 +225,7 @@ let insert_move_extcall_arg (ty_arg : Cmm.exttype) src dst :
   let ty_arg_is_int32 =
     match ty_arg with
     | XInt32 -> true
-    | XInt | XInt64 | XFloat32 | XFloat | XVec128 -> false
+    | XInt | XInt64 | XFloat32 | XFloat | XVec128 | XVec256 | XVec512 -> false
   in
   if macosx && ty_arg_is_int32 && is_stack_slot dst
   then Rewritten (Op (Specific Imove32), src, dst)
