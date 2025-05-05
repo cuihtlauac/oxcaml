@@ -1484,6 +1484,20 @@ module Const = struct
       }
 
     (* CR layouts v3: change to [Maybe_null] when separability is implemented. *)
+    let vec256 =
+      { jkind =
+          mk_jkind (Base Vec256) ~mode_crossing:false ~nullability:Non_null;
+        name = "vec256"
+      }
+
+    (* CR layouts v3: change to [Maybe_null] when separability is implemented. *)
+    let vec512 =
+      { jkind =
+          mk_jkind (Base Vec512) ~mode_crossing:false ~nullability:Non_null;
+        name = "vec512"
+      }
+
+    (* CR layouts v3: change to [Maybe_null] when separability is implemented. *)
     let kind_of_unboxed_128bit_vectors =
       { jkind = mk_jkind (Base Vec128) ~mode_crossing:true ~nullability:Non_null;
         name = "vec128 mod everything"
@@ -1527,7 +1541,11 @@ module Const = struct
         bits64;
         kind_of_unboxed_int64;
         vec128;
-        kind_of_unboxed_128bit_vectors ]
+        kind_of_unboxed_128bit_vectors;
+        vec256;
+        kind_of_unboxed_256bit_vectors;
+        vec512;
+        kind_of_unboxed_512bit_vectors ]
 
     let of_attribute : Builtin_attributes.jkind_attribute -> t = function
       | Immediate -> immediate
@@ -1790,6 +1808,8 @@ module Const = struct
       | "bits32" -> Builtin.bits32.jkind
       | "bits64" -> Builtin.bits64.jkind
       | "vec128" -> Builtin.vec128.jkind
+      | "vec256" -> Builtin.vec256.jkind
+      | "vec512" -> Builtin.vec512.jkind
       | "immutable_data" -> Builtin.immutable_data.jkind
       | "sync_data" -> Builtin.sync_data.jkind
       | "mutable_data" -> Builtin.mutable_data.jkind

@@ -101,6 +101,10 @@ module Sort = struct
 
     let vec128 = Base Vec128
 
+    let vec256 = Base Vec256
+
+    let vec512 = Base Vec512
+
     module Debug_printers = struct
       let t ppf c =
         let rec pp_element ~nested ppf = function

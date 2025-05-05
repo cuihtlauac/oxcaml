@@ -61,6 +61,10 @@ module type Sort = sig
 
     val vec128 : t
 
+    val vec256 : t
+
+    val vec512 : t
+
     module Debug_printers : sig
       val t : Format.formatter -> t -> unit
     end

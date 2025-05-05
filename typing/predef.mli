@@ -188,6 +188,11 @@ val build_initial_env:
 val add_simd_stable_extension_types :
   (Ident.t -> type_declaration -> 'a -> 'a) -> 'a -> 'a
 
+(* Add beta simd types to an environment.  This is separate from [build_initial_env]
+   because we'd like to only do it if the beta simd extension is on. *)
+val add_simd_beta_extension_types :
+   (Ident.t -> type_declaration -> 'a -> 'a) -> 'a -> 'a
+
 (* Add alpha simd types to an environment.  This is separate from [build_initial_env]
    because we'd like to only do it if the alpha simd extension is on. *)
 val add_simd_alpha_extension_types :

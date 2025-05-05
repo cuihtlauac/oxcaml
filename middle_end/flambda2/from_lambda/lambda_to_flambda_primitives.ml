@@ -994,7 +994,7 @@ let array_vector_access_validity_condition array ~size_int
     match vec_kind with Vec128 -> 16 | Vec256 -> 32 | Vec512 -> 64
   in
   let num_consecutive_elements_being_accessed =
-    size_of_access / size_of_element
+    (size_of_access + (size_of_element - 1)) / size_of_element
   in
   multiple_word_array_access_validity_condition array ~size_int
     (Array_kind array_kind) Ptagged_int_index

@@ -325,6 +325,12 @@ module Const : sig
     (** The jkind of unboxed 128-bit vectors with no mode crossing. *)
     val vec128 : t
 
+    (** The jkind of unboxed 256-bit vectors with no mode crossing. *)
+    val vec256 : t
+
+    (** The jkind of unboxed 256-bit vectors with no mode crossing. *)
+    val vec512 : t
+
     (** The jkind of unboxed 128-bit vectors with mode crossing. *)
     val kind_of_unboxed_128bit_vectors : t
 

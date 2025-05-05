@@ -593,7 +593,7 @@ let add_simd_stable_extension_types add_type env =
   |> add_type ident_float64x2 ~jkind:Jkind.Const.Builtin.immutable_data
       ~unboxed_jkind:Jkind.Const.Builtin.kind_of_unboxed_128bit_vectors
 
-let add_simd_alpha_extension_types add_type env =
+let add_simd_beta_extension_types add_type env =
   let _, add_type = mk_add_type add_type in
   env
   |> add_type ident_int8x32 ~jkind:Jkind.Const.Builtin.immutable_data
@@ -608,6 +608,10 @@ let add_simd_alpha_extension_types add_type env =
       ~unboxed_jkind:Jkind.Const.Builtin.kind_of_unboxed_256bit_vectors
   |> add_type ident_float64x4 ~jkind:Jkind.Const.Builtin.immutable_data
       ~unboxed_jkind:Jkind.Const.Builtin.kind_of_unboxed_256bit_vectors
+
+let add_simd_alpha_extension_types add_type env =
+  let _, add_type = mk_add_type add_type in
+  env
   |> add_type ident_int8x64 ~jkind:Jkind.Const.Builtin.immutable_data
       ~unboxed_jkind:Jkind.Const.Builtin.kind_of_unboxed_512bit_vectors
   |> add_type ident_int16x32 ~jkind:Jkind.Const.Builtin.immutable_data

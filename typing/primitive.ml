@@ -513,6 +513,10 @@ let prim_has_valid_reprs ~loc prim =
           ("64", "#", C.bits64);
           ("a128", "#", C.vec128);
           ("u128", "#", C.vec128);
+          ("a256", "#", C.vec256);
+          ("u256", "#", C.vec256);
+          ("a512", "#", C.vec512);
+          ("u512", "#", C.vec512);
         ]
       in
       let indices : (_ * Jkind_types.Sort.Const.t) list =
@@ -717,6 +721,14 @@ let prim_has_valid_reprs ~loc prim =
       exactly [Same_as_ocaml_repr C.vec128; Same_as_ocaml_repr C.value]
     | "%unbox_vec128" ->
       exactly [Same_as_ocaml_repr C.value; Same_as_ocaml_repr C.vec128]
+    | "%box_vec256" ->
+      exactly [Same_as_ocaml_repr C.vec256; Same_as_ocaml_repr C.value]
+    | "%unbox_vec256" ->
+      exactly [Same_as_ocaml_repr C.value; Same_as_ocaml_repr C.vec256]
+    | "%box_vec512" ->
+      exactly [Same_as_ocaml_repr C.vec512; Same_as_ocaml_repr C.value]
+    | "%unbox_vec512" ->
+      exactly [Same_as_ocaml_repr C.value; Same_as_ocaml_repr C.vec512]
 
     | "%reinterpret_tagged_int63_as_unboxed_int64" ->
       exactly [Same_as_ocaml_repr C.value; Same_as_ocaml_repr C.bits64]
