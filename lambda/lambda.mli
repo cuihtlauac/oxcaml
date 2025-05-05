@@ -102,126 +102,7 @@ type region_close =
     tail call because the outer region needs to end there.)
 *)
 
-type integer_comparison = Scalar.Integer_comparison.t =
-    Ceq | Cne | Clt | Cgt | Cle | Cge
-
-type float_comparison = Scalar.Float_comparison.t =
-    CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
-
-
-(** [Nullable] value kinds allow the special Null value in addition to the
-    values of its underlying type. [Non_nullable] only allows values of the
-    underlying type. *)
-type nullable =
-  | Nullable
-  | Non_nullable
-
-and value_kind =
-  { raw_kind : value_kind_non_null;
-    nullable : nullable;
-  }
-
-and value_kind_non_null =
-  | Pgenval
-  | Pintval
-  | Pboxedfloatval of boxed_float
-  | Pboxedintval of boxed_integer
-  | Pvariant of {
-      consts : int list;
-      non_consts : (int * constructor_shape) list;
-      (** [non_consts] must be non-empty.  For constant variants [Pintval]
-          must be used.  This causes a small loss of precision but it is not
-          expected to be significant. *)
-    }
-  | Parrayval of array_kind
-  | Pboxedvectorval of boxed_vector
-
-(* Because we check for and error on void in the translation to lambda, we don't
-   need a constructor for it here. *)
-and layout =
-  | Ptop
-  | Pvalue of value_kind
-  | Punboxed_float of unboxed_float
-  | Punboxed_int of unboxed_integer
-  | Punboxed_vector of unboxed_vector
-  | Punboxed_product of layout list
-  | Pbottom
-
-and array_kind =
-    Pgenarray | Paddrarray | Pintarray | Pfloatarray
-  | Punboxedfloatarray of Primitive.unboxed_float
-  | Punboxedintarray of Primitive.unboxed_integer
-  | Punboxedvectorarray of Primitive.unboxed_vector
-  | Pgcscannableproductarray of scannable_product_element_kind list
-  | Pgcignorableproductarray of ignorable_product_element_kind list
-
-and ignorable_product_element_kind =
-  | Pint_ignorable
-  | Punboxedfloat_ignorable of unboxed_float
-  | Punboxedint_ignorable of unboxed_integer
-  | Pproduct_ignorable of ignorable_product_element_kind list
-  (* Invariant: the product element kind list has length >= 2 *)
-
-and scannable_product_element_kind =
-  | Pint_scannable
-  | Paddr_scannable
-  | Pproduct_scannable of scannable_product_element_kind list
-  (* Invariant: the product element kind list has length >= 2 *)
-
-and block_shape =
-  value_kind list option
-
-and 'a mixed_block_element =
-  | Value of value_kind
-  | Float_boxed of 'a
-  | Float64
-  | Float32
-  | Bits8
-  | Bits16
-  | Bits32
-  | Bits64
-  | Vec128
-  | Word
-
-and mixed_block_shape = unit mixed_block_element array
-
-and mixed_block_shape_with_locality_mode
-  = locality_mode mixed_block_element array
-
-and constructor_shape =
-  | Constructor_uniform of value_kind list
-  | Constructor_mixed of mixed_block_shape
-
-and unboxed_float = Primitive.unboxed_float =
-  | Unboxed_float64
-  | Unboxed_float32
-
-and unboxed_integer = Primitive.unboxed_integer =
-  | Unboxed_int64
-  | Unboxed_nativeint
-  | Unboxed_int32
-  | Unboxed_int16
-  | Unboxed_int8
-  | Unboxed_int
-
-and unboxed_vector = Primitive.unboxed_vector =
-  | Unboxed_vec128
-
-and boxed_float = Primitive.boxed_float =
-  | Boxed_float64
-  | Boxed_float32
-
-and boxed_integer = Primitive.boxed_integer =
-  | Boxed_int64
-  | Boxed_nativeint
-  | Boxed_int32
-
-and boxed_vector = Primitive.boxed_vector =
-  | Boxed_vec128
-
-
 type any_locality_mode = Scalar.any_locality_mode = Any_locality_mode
-
 
 module Phys_equal : sig
   type t = Eq | Noteq
@@ -457,6 +338,22 @@ and extern_repr =
 
 and external_call_description = extern_repr Primitive.description_gen
 
+and integer_comparison = Scalar.Integer_comparison.t =
+    Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and float_comparison = Scalar.Float_comparison.t =
+    CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
+
+and array_kind =
+    Pgenarray | Paddrarray | Pintarray | Pfloatarray
+  | Punboxedfloatarray of unboxed_float
+  | Punboxedintarray of unboxed_integer
+  | Punboxedvectorarray of unboxed_vector
+  | Pgcscannableproductarray of scannable_product_element_kind list
+  | Pgcignorableproductarray of ignorable_product_element_kind list
+  (* Invariant: the product element kind lists have length >= 2 *)
+
+
 (** When accessing a flat float array, we need to know the mode which we should
     box the resulting float at. *)
 and array_ref_kind =
@@ -464,9 +361,9 @@ and array_ref_kind =
   | Paddrarray_ref
   | Pintarray_ref
   | Pfloatarray_ref of locality_mode
-  | Punboxedfloatarray_ref of Primitive.unboxed_float
-  | Punboxedintarray_ref of Primitive.unboxed_integer
-  | Punboxedvectorarray_ref of Primitive.unboxed_vector
+  | Punboxedfloatarray_ref of unboxed_float
+  | Punboxedintarray_ref of unboxed_integer
+  | Punboxedvectorarray_ref of unboxed_vector
   | Pgcscannableproductarray_ref of scannable_product_element_kind list
   | Pgcignorableproductarray_ref of ignorable_product_element_kind list
   (* Invariant: the product element kind lists have length >= 2 *)
@@ -478,18 +375,120 @@ and array_set_kind =
   | Paddrarray_set of modify_mode
   | Pintarray_set
   | Pfloatarray_set
-  | Punboxedfloatarray_set of Primitive.unboxed_float
-  | Punboxedintarray_set of Primitive.unboxed_integer
-  | Punboxedvectorarray_set of Primitive.unboxed_vector
+  | Punboxedfloatarray_set of unboxed_float
+  | Punboxedintarray_set of unboxed_integer
+  | Punboxedvectorarray_set of unboxed_vector
   | Pgcscannableproductarray_set of
       modify_mode * scannable_product_element_kind list
   | Pgcignorableproductarray_set of ignorable_product_element_kind list
   (* Invariant: the product element kind lists have length >= 2 *)
 
+and ignorable_product_element_kind =
+  | Pint_ignorable
+  | Punboxedfloat_ignorable of unboxed_float
+  | Punboxedint_ignorable of unboxed_integer
+  | Pproduct_ignorable of ignorable_product_element_kind list
+  (* Invariant: the product element kind list has length >= 2 *)
+
+and scannable_product_element_kind =
+  | Pint_scannable
+  | Paddr_scannable
+  | Pproduct_scannable of scannable_product_element_kind list
+  (* Invariant: the product element kind list has length >= 2 *)
+
 and array_index_kind =
   | Ptagged_int_index
   | Punboxed_int_index of unboxed_integer
 
+(** [Nullable] value kinds allow the special Null value in addition to the
+    values of its underlying type. [Non_nullable] only allows values of the
+    underlying type. *)
+and nullable =
+  | Nullable
+  | Non_nullable
+
+and value_kind =
+  { raw_kind : value_kind_non_null;
+    nullable : nullable;
+  }
+
+and value_kind_non_null =
+  | Pgenval
+  | Pintval
+  | Pboxedfloatval of boxed_float
+  | Pboxedintval of boxed_integer
+  | Pvariant of {
+      consts : int list;
+      non_consts : (int * constructor_shape) list;
+      (** [non_consts] must be non-empty.  For constant variants [Pintval]
+          must be used.  This causes a small loss of precision but it is not
+          expected to be significant. *)
+    }
+  | Parrayval of array_kind
+  | Pboxedvectorval of boxed_vector
+
+(* Because we check for and error on void in the translation to lambda, we don't
+   need a constructor for it here. *)
+and layout =
+  | Ptop
+  | Pvalue of value_kind
+  | Punboxed_float of unboxed_float
+  | Punboxed_int of unboxed_integer
+  | Punboxed_vector of unboxed_vector
+  | Punboxed_product of layout list
+  | Pbottom
+
+and block_shape =
+  value_kind list option
+
+and 'a mixed_block_element =
+  | Value of value_kind
+  | Float_boxed of 'a
+  | Float64
+  | Float32
+  | Bits8
+  | Bits16
+  | Bits32
+  | Bits64
+  | Vec128
+  | Word
+
+and mixed_block_shape = unit mixed_block_element array
+
+and mixed_block_shape_with_locality_mode
+  = locality_mode mixed_block_element array
+
+and constructor_shape =
+  | Constructor_uniform of value_kind list
+  | Constructor_mixed of mixed_block_shape
+
+and unboxed_float = Primitive.unboxed_float =
+  | Unboxed_float64
+  | Unboxed_float32
+
+and unboxed_integer = Primitive.unboxed_integer =
+  | Unboxed_int64
+  | Unboxed_nativeint
+  | Unboxed_int32
+  | Unboxed_int16
+  | Unboxed_int8
+  | Unboxed_int
+
+
+and unboxed_vector = Primitive.unboxed_vector =
+  | Unboxed_vec128
+
+and boxed_float = Primitive.boxed_float =
+  | Boxed_float64
+  | Boxed_float32
+
+and boxed_integer = Primitive.boxed_integer =
+  | Boxed_int64
+  | Boxed_nativeint
+  | Boxed_int32
+
+and boxed_vector = Primitive.boxed_vector =
+  | Boxed_vec128
 and peek_or_poke =
   | Ppp_tagged_immediate
   | Ppp_unboxed_float32

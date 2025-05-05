@@ -22,6 +22,8 @@ type unboxed_integer =
   | Unboxed_int16
   | Unboxed_int8
   | Unboxed_int
+  (** We don't have an [int#] type (at least not yet), but for consistency, it's important
+      that we have unboxed types corresponding to all of our integral types *)
 
 type unboxed_float = Unboxed_float64 | Unboxed_float32
 type unboxed_vector = Unboxed_vec128
