@@ -189,7 +189,7 @@ let extern_repr_of_native_repr:
   | Repr_poly, None -> Misc.fatal_error "Unexpected Repr_poly"
   | Same_as_ocaml_repr s, _ -> Same_as_ocaml_repr s
   | Unboxed_float f, _ -> Unboxed_float f
-  | Unboxed_integer i, _ -> Unboxed_integer (Lambda.unboxed_integer_of_primitive i)
+  | Unboxed_integer i, _ -> Unboxed_integer i
   | Unboxed_vector i, _ -> Unboxed_vector i
 
 let sort_of_native_repr ~poly_sort repr =

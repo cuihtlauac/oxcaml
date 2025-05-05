@@ -524,8 +524,6 @@ val equal_value_kind : value_kind -> value_kind -> bool
 
 val equal_layout : layout -> layout -> bool
 
-val equal_unboxed_integer : unboxed_integer -> unboxed_integer -> bool
-
 val compatible_layout : layout -> layout -> bool
 
 val print_boxed_vector : Format.formatter -> boxed_vector -> unit
@@ -1220,6 +1218,3 @@ val static_cast
   -> lambda
   -> loc:scoped_location
   -> lambda
-
-
-val unboxed_integer_of_primitive : Primitive.unboxed_integer -> unboxed_integer

@@ -1023,7 +1023,7 @@ let rec layout_union l1 l2 =
   | Punboxed_float f1, Punboxed_float f2 ->
       if Primitive.equal_unboxed_float f1 f2 then l1 else Ptop
   | Punboxed_int bi1, Punboxed_int bi2 ->
-      if Lambda.equal_unboxed_integer bi1 bi2 then l1 else Ptop
+      if Primitive.equal_unboxed_integer bi1 bi2 then l1 else Ptop
   | Punboxed_vector vi1, Punboxed_vector vi2 ->
       if Primitive.equal_unboxed_vector vi1 vi2 then l1 else Ptop
   | Punboxed_product layouts1, Punboxed_product layouts2 ->

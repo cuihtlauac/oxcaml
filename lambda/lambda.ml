@@ -319,10 +319,10 @@ and extern_repr =
   | Unboxed_integer of unboxed_integer
 
 and external_call_description = extern_repr Primitive.description_gen
-and integer_comparison =
+and integer_comparison = Scalar.Integer_comparison.t =
     Ceq | Cne | Clt | Cgt | Cle | Cge
 
-and float_comparison =
+and float_comparison = Scalar.Float_comparison.t =
     CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
 
 and nullable =
@@ -2147,7 +2147,7 @@ let array_ref_kind_result_layout = function
   | Pfloatarray_ref _ -> layout_boxed_float Boxed_float64
   | Punboxedfloatarray_ref bf -> layout_unboxed_float bf
   | Pgenarray_ref _ | Paddrarray_ref -> layout_value_field
-  | Punboxedintarray_ref i -> layout_unboxed_int (unboxed_integer_of_primitive i)
+  | Punboxedintarray_ref i -> layout_unboxed_int i
   | Punboxedvectorarray_ref bv -> layout_unboxed_vector bv
   | Pgcscannableproductarray_ref kinds -> layout_of_scannable_kinds kinds
   | Pgcignorableproductarray_ref kinds -> layout_of_ignorable_kinds kinds
