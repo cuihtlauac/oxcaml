@@ -119,53 +119,47 @@ let code loopify(never) size(88) newer_version_of(foo_0)
    let prim_2 = %num_conv (imm tagged -> nativeint) i in
    let prim_3 = %int_comp nativeint prim_2 < prim_1 in
    switch prim_3
-     | 0 -> k3
-     | 1 -> k4 (prim_1, prim_2))
-    where k4 (prim : nativeint, prim_1 : nativeint) =
-      let cse_param = prim_1 in
-      let prim_2 = prim in
-      let prim_3 = prim_1 in
+     | 0 -> k1 pop(regular k1) ($camlTests3__block18)
+     | 1 -> k5 (prim_2, prim_1))
+    where k5 (prim_2 : nativeint, prim_1 : nativeint) =
+      let cse_param = prim_2 in
+      let prim_2_1 = prim_2 in
+      let prim_1_1 = prim_1 in
       ((let cond_result = %is_flat_float_array arr in
         switch cond_result
-          | 0 -> k6
-          | 1 -> k5)
-         where k6 =
-           let ifnot_result = %array_load mutable arr.(cse_param) in
-           cont k4 (ifnot_result)
+          | 0 -> k5
+          | 1 -> k4)
          where k5 =
-           let prim_4 = %array_load float mutable arr.(cse_param) in
-           let ifso_result = %Box_float prim_4 in
-           cont k4 (ifso_result)
-         where k4 (if_then_else_result) =
-           (apply f (if_then_else_result) -> k4 * k1
-              where k4 (param : val) =
-                cont k2 (param, prim_2, prim_3)))
-    where k3 =
-      cont k1 pop(regular k1) ($camlTests3__block18)
-    where k2 (apply_result : val, prim : nativeint, prim_1 : nativeint) =
-      let cse_param = prim in
+           let ifnot_result = %array_load mutable arr.(cse_param) in
+           cont k3 (ifnot_result)
+         where k4 =
+           let prim_1_2 = %array_load float mutable arr.(cse_param) in
+           let ifso_result = %Box_float prim_1_2 in
+           cont k3 (ifso_result)
+         where k3 (if_then_else_result) =
+           (apply f (if_then_else_result) -> k1_1 * k1
+              where k1_1 (param) =
+                cont k2 (param, prim_2_1, prim_1_1)))
+    where k2 (apply_result : val, prim_2 : nativeint, prim_1 : nativeint) =
+      let cse_param = prim_2 in
       let cse_param_1 = prim_1 in
-      ((let prim_2 = %int_comp nativeint cse_param_1 < cse_param in
-        switch prim_2
-          | 0 -> k2
-          | 1 -> k3)
-         where k3 =
+      ((let prim_3 = %int_comp nativeint cse_param < cse_param_1 in
+        switch prim_3
+          | 0 -> k1 pop(regular k1) ($camlTests3__block18)
+          | 1 -> k4)
+         where k4 =
            ((let cond_result = %is_flat_float_array arr in
              switch cond_result
                | 0 -> k4
                | 1 -> k3)
               where k4 =
-                let ifnot_result =
-                  %array_set arr.(cse_param_1) <- apply_result
+                let ifnot_result = %array_set arr.(cse_param) <- apply_result
                 in
                 cont k (0)
               where k3 =
-                let prim_2 = %unbox_float apply_result in
-                let ifso_result = %array_set float arr.(cse_param_1) = prim_2
-                in
-                cont k (0))
-         where k2 =
-           cont k1 pop(regular k1) ($camlTests3__block18))
+                let prim = %unbox_float apply_result in
+                let ifso_result = %array_set float arr.(cse_param) = prim in
+                cont k (0)))
 in
 let $camlTests3__foo_2 = closure foo_0_1 @foo in
 let code loopify(never) size(33) newer_version_of(f_1)
