@@ -512,6 +512,16 @@ let rec unarize_const_sort_for_extern_repr (sort : Jkind.Sort.Const.t) =
       [ { kind = K.naked_vec128;
           arg_transformer = None;
           return_transformer = None
+        } ]
+    | Vec256 ->
+      [ { kind = K.naked_vec256;
+          arg_transformer = None;
+          return_transformer = None
+        } ]
+    | Vec512 ->
+      [ { kind = K.naked_vec512;
+          arg_transformer = None;
+          return_transformer = None
         } ])
   | Product sorts -> List.concat_map unarize_const_sort_for_extern_repr sorts
 

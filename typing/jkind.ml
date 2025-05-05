@@ -125,6 +125,10 @@ module Layout = struct
 
       let vec128 = Base Sort.Vec128
 
+      let vec256 = Base Sort.Vec256
+
+      let vec512 = Base Sort.Vec512
+
       let of_base : Sort.base -> t = function
         | Value -> value
         | Void -> void
@@ -134,6 +138,8 @@ module Layout = struct
         | Bits32 -> bits32
         | Bits64 -> bits64
         | Vec128 -> vec128
+        | Vec256 -> vec256
+        | Vec512 -> vec512
     end
 
     include Static
@@ -1483,6 +1489,18 @@ module Const = struct
         name = "vec128 mod everything"
       }
 
+    (* CR layouts v3: change to [Maybe_null] when separability is implemented. *)
+    let kind_of_unboxed_256bit_vectors =
+      { jkind = mk_jkind (Base Vec256) ~mode_crossing:true ~nullability:Non_null;
+        name = "vec256 mod everything"
+      }
+
+    (* CR layouts v3: change to [Maybe_null] when separability is implemented. *)
+    let kind_of_unboxed_512bit_vectors =
+      { jkind = mk_jkind (Base Vec512) ~mode_crossing:true ~nullability:Non_null;
+        name = "vec512 mod everything"
+      }
+
     let all =
       [ any;
         any_mod_everything;
@@ -1839,7 +1857,11 @@ module Const = struct
       (jkind : 'd t) =
     let rec scan_layout (l : Layout.Const.t) : Language_extension.maturity =
       match l, Mod_bounds.nullability jkind.mod_bounds with
-      | (Base (Float64 | Float32 | Word | Bits32 | Bits64 | Vec128) | Any), _
+      | ( ( Base
+              ( Float64 | Float32 | Word | Bits32 | Bits64 | Vec128 | Vec256
+              | Vec512 )
+          | Any ),
+          _ )
       | Base Value, Non_null
       | Base Value, Maybe_null ->
         Stable
