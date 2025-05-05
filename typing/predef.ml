@@ -417,7 +417,6 @@ let build_initial_env  add_type add_extension empty_env =
   |> add_type ident_bool
        ~kind:(variant [ cstr ident_false []; cstr ident_true []])
        ~jkind:Jkind.Const.Builtin.immediate
-       ~unboxed_jkind:Jkind.Const.Builtin.kind_of_unboxed_int8
   |> add_type ident_char ~jkind:Jkind.Const.Builtin.immediate
        ~unboxed_jkind:Jkind.Const.Builtin.kind_of_unboxed_int8
   |> add_type ident_exn ~kind:Type_open ~jkind:Jkind.Const.Builtin.value

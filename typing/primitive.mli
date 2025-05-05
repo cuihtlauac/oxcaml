@@ -32,8 +32,12 @@ type boxed_integer = Boxed_int64 | Boxed_nativeint | Boxed_int32
 type boxed_float = Boxed_float64 | Boxed_float32
 type boxed_vector = Boxed_vec128
 
-(* Representation of arguments/result for the native code version
-   of a primitive *)
+(** Representation of arguments/result for the native code version
+    of a primitive.
+
+    Untagged integers (such as [int[@untagged]]) are represented as
+    [Unboxed_integer Unboxed_int]
+*)
 type native_repr =
   | Repr_poly
   | Same_as_ocaml_repr of Jkind_types.Sort.Const.t
