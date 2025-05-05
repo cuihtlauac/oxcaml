@@ -2943,7 +2943,6 @@ let initial =
     in
     empty
     |> Predef.build_initial_env
-         ~include_naked_small_integers:(Language_extension.is_at_least Small_numbers Beta)
          (add_type ~check:false)
          (add_extension ~check:false ~rebind:false)
     |> add SIMD Stable Predef.add_simd_stable_extension_types
