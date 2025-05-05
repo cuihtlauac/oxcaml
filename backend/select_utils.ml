@@ -172,6 +172,8 @@ let oper_result_type = function
     | Single { reg = Float64 } | Double -> typ_float
     | Single { reg = Float32 } -> typ_float32
     | Onetwentyeight_aligned | Onetwentyeight_unaligned -> typ_vec128
+    | Twofiftysix_aligned | Twofiftysix_unaligned -> typ_vec256
+    | Fivetwelve_aligned | Fivetwelve_unaligned -> typ_vec512
     | _ -> typ_int)
   | Calloc _ -> typ_val
   | Cstore (_c, _) -> typ_void
