@@ -213,7 +213,8 @@ let rec declare_const acc dbg (const : Lambda.structured_constant) =
       |> Mixed_block_shape.reorder_array shape
       |> Array.mapi (fun i c ->
              match Mixed_block_shape.get_reordered shape i with
-             | Value _ | Float64 | Float32 | Bits32 | Bits64 | Vec128 | Vec256 | Vec512 | Word ->
+             | Value _ | Float64 | Float32 | Bits32 | Bits64 | Vec128 | Vec256
+             | Vec512 | Word ->
                c
              | Float_boxed _ -> unbox_float_constant c)
       |> Array.to_list
@@ -1312,7 +1313,8 @@ let close_let acc env let_bound_ids_with_kinds user_visible defining_expr
                           | Naked_float f -> Or_variable.Const f
                           | Tagged_immediate _ | Naked_immediate _
                           | Naked_float32 _ | Naked_int32 _ | Naked_int64 _
-                          | Naked_nativeint _ | Naked_vec128 _ | Naked_vec256 _ | Naked_vec512 _ | Null ->
+                          | Naked_nativeint _ | Naked_vec128 _ | Naked_vec256 _
+                          | Naked_vec512 _ | Null ->
                             Misc.fatal_errorf
                               "Binding of %a to %a contains the constant %a \
                                inside a float record, whereas only naked \

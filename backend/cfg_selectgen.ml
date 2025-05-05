@@ -643,18 +643,11 @@ module Make (Target : Cfg_selectgen_target_intf.S) = struct
               match r.Reg.typ with
               | Float -> Double
               | Float32 -> Single { reg = Float32 }
-              | Vec128 ->
-                (* 128-bit memory operations are unaligned by default. Aligned
-                   (big)array operations are handled separately via cmm. *)
-                Onetwentyeight_unaligned
-              | Vec256 ->
-                (* 256-bit memory operations are unaligned by default. Aligned
-                   (big)array operations are handled separately via cmm. *)
-                Twofiftysix_unaligned
-              | Vec512 ->
-                (* 512-bit memory operations are unaligned by default. Aligned
-                   (big)array operations are handled separately via cmm. *)
-                Fivetwelve_unaligned
+              (* SIMD memory operations are unaligned by default. Aligned
+                 bigarray operations are handled separately via cmm. *)
+              | Vec128 -> Onetwentyeight_unaligned
+              | Vec256 -> Twofiftysix_unaligned
+              | Vec512 -> Fivetwelve_unaligned
               | Val | Addr | Int -> Word_val
               | Valx2 -> Misc.fatal_error "Unexpected machtype_component Valx2"
             in

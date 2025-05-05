@@ -1110,95 +1110,63 @@ let unbox_float dbg =
 
 (* Vectors *)
 
-let box_vec128 dbg m c =
-  Cop
-    ( Calloc (m, Alloc_block_kind_vec128),
-      [alloc_boxedvec128_header m dbg; c],
-      dbg )
+let box_vector ~alloc_kind ~header dbg m c =
+  Cop (Calloc (m, alloc_kind), [header m dbg; c], dbg)
 
-let unbox_vec128 dbg =
-  (* Boxed vectors are not 16-byte aligned by the GC, so we must use an
-     unaligned load. *)
+let unbox_vector ~header ~local_header ~chunk ~structured_constant_of_sym dbg =
+  (* Boxed vectors are not aligned by the GC, so we use an unaligned load. *)
   map_tail (function
     | Cop (Calloc _, [Cconst_natint (hdr, _); c], _)
-      when Nativeint.equal hdr boxedvec128_header
-           || Nativeint.equal hdr boxedvec128_local_header ->
+      when Nativeint.equal hdr header || Nativeint.equal hdr local_header ->
       c
     | Cconst_symbol (s, _dbg) as cmm -> (
-      match Cmmgen_state.structured_constant_of_sym s.sym_name with
-      | Some (Const_vec128 vec128_bits) ->
-        (* Need to build a vec128_bits record by extracting fields *)
-        let extracted_bits =
-          { Cmm.word0 = vec128_bits.word0; word1 = vec128_bits.word1 }
-        in
-        Cconst_vec128 (extracted_bits, dbg)
-        (* or keep _dbg? *)
-      | _ -> Cop (mk_load_immut Onetwentyeight_unaligned, [cmm], dbg))
-    | cmm -> Cop (mk_load_immut Onetwentyeight_unaligned, [cmm], dbg))
+      match structured_constant_of_sym s.sym_name dbg with
+      | Some const -> const
+      | None -> Cop (mk_load_immut chunk, [cmm], dbg))
+    | cmm -> Cop (mk_load_immut chunk, [cmm], dbg))
 
-let box_vec256 dbg m c =
-  Cop
-    ( Calloc (m, Alloc_block_kind_vec256),
-      [alloc_boxedvec256_header m dbg; c],
-      dbg )
+let box_vec128 =
+  box_vector ~alloc_kind:Alloc_block_kind_vec128
+    ~header:alloc_boxedvec128_header
 
-let unbox_vec256 dbg =
-  (* Boxed vectors are not 16-byte aligned by the GC, so we must use an
-     unaligned load. *)
-  map_tail (function
-    | Cop (Calloc _, [Cconst_natint (hdr, _); c], _)
-      when Nativeint.equal hdr boxedvec256_header
-           || Nativeint.equal hdr boxedvec256_local_header ->
-      c
-    | Cconst_symbol (s, _dbg) as cmm -> (
-      match Cmmgen_state.structured_constant_of_sym s.sym_name with
-      | Some (Const_vec256 vec256_bits) ->
-        (* Need to build a vec256_bits record by extracting fields *)
-        let extracted_bits =
-          { Cmm.word0 = vec256_bits.word0;
-            word1 = vec256_bits.word1;
-            word2 = vec256_bits.word2;
-            word3 = vec256_bits.word3
-          }
-        in
-        Cconst_vec256 (extracted_bits, dbg)
-        (* or keep _dbg? *)
-      | _ -> Cop (mk_load_immut Twofiftysix_unaligned, [cmm], dbg))
-    | cmm -> Cop (mk_load_immut Twofiftysix_unaligned, [cmm], dbg))
+let unbox_vec128 =
+  unbox_vector ~header:boxedvec128_header ~local_header:boxedvec128_local_header
+    ~chunk:Onetwentyeight_unaligned
+    ~structured_constant_of_sym:(fun symbol dbg ->
+      match Cmmgen_state.structured_constant_of_sym symbol with
+      | Some (Const_vec128 { word0; word1 }) ->
+        Some (Cconst_vec128 ({ word0; word1 }, dbg))
+      | _ -> None)
 
-let box_vec512 dbg m c =
-  Cop
-    ( Calloc (m, Alloc_block_kind_vec512),
-      [alloc_boxedvec512_header m dbg; c],
-      dbg )
+let box_vec256 =
+  box_vector ~alloc_kind:Alloc_block_kind_vec256
+    ~header:alloc_boxedvec256_header
 
-let unbox_vec512 dbg =
-  (* Boxed vectors are not 16-byte aligned by the GC, so we must use an
-     unaligned load. *)
-  map_tail (function
-    | Cop (Calloc _, [Cconst_natint (hdr, _); c], _)
-      when Nativeint.equal hdr boxedvec512_header
-           || Nativeint.equal hdr boxedvec512_local_header ->
-      c
-    | Cconst_symbol (s, _dbg) as cmm -> (
-      match Cmmgen_state.structured_constant_of_sym s.sym_name with
-      | Some (Const_vec512 vec512_bits) ->
-        (* Need to build a vec512_bits record by extracting fields *)
-        let extracted_bits =
-          { Cmm.word0 = vec512_bits.word0;
-            word1 = vec512_bits.word1;
-            word2 = vec512_bits.word2;
-            word3 = vec512_bits.word3;
-            word4 = vec512_bits.word4;
-            word5 = vec512_bits.word5;
-            word6 = vec512_bits.word6;
-            word7 = vec512_bits.word7
-          }
-        in
-        Cconst_vec512 (extracted_bits, dbg)
-        (* or keep _dbg? *)
-      | _ -> Cop (mk_load_immut Fivetwelve_unaligned, [cmm], dbg))
-    | cmm -> Cop (mk_load_immut Fivetwelve_unaligned, [cmm], dbg))
+let unbox_vec256 =
+  unbox_vector ~header:boxedvec256_header ~local_header:boxedvec256_local_header
+    ~chunk:Onetwentyeight_unaligned
+    ~structured_constant_of_sym:(fun symbol dbg ->
+      match Cmmgen_state.structured_constant_of_sym symbol with
+      | Some (Const_vec256 { word0; word1; word2; word3 }) ->
+        Some (Cconst_vec256 ({ word0; word1; word2; word3 }, dbg))
+      | _ -> None)
+
+let box_vec512 =
+  box_vector ~alloc_kind:Alloc_block_kind_vec512
+    ~header:alloc_boxedvec512_header
+
+let unbox_vec512 =
+  unbox_vector ~header:boxedvec512_header ~local_header:boxedvec512_local_header
+    ~chunk:Onetwentyeight_unaligned
+    ~structured_constant_of_sym:(fun symbol dbg ->
+      match Cmmgen_state.structured_constant_of_sym symbol with
+      | Some
+          (Const_vec512
+            { word0; word1; word2; word3; word4; word5; word6; word7 }) ->
+        Some
+          (Cconst_vec512
+             ({ word0; word1; word2; word3; word4; word5; word6; word7 }, dbg))
+      | _ -> None)
 
 (* Conversions for 16-bit floats *)
 
@@ -1490,37 +1458,27 @@ let unboxed_float32_array_length =
     ~custom_ops_base_symbol:custom_ops_unboxed_float32_array
     ~elements_per_word:2
 
-let unboxed_int64_or_nativeint_array_length arr dbg =
+let unboxed_custom_array_length ~log2_element_words arr dbg =
   let res =
     bind "arr" arr (fun arr ->
         (* need to subtract so as not to count the custom_operations field *)
         sub_int (get_size arr dbg) (int ~dbg 1) dbg)
   in
-  tag_int res dbg
+  if log2_element_words = 1
+  then tag_int res dbg
+  else tag_int (lsr_int res (int ~dbg log2_element_words) dbg) dbg
+
+let unboxed_int64_or_nativeint_array_length arr dbg =
+  unboxed_custom_array_length ~log2_element_words:1 arr dbg
 
 let unboxed_vec128_array_length arr dbg =
-  let res =
-    bind "arr" arr (fun arr ->
-        (* need to subtract so as not to count the custom_operations field *)
-        sub_int (get_size arr dbg) (int ~dbg 1) dbg)
-  in
-  tag_int (lsr_int res (int ~dbg 1) dbg) dbg
+  unboxed_custom_array_length ~log2_element_words:2 arr dbg
 
 let unboxed_vec256_array_length arr dbg =
-  let res =
-    bind "arr" arr (fun arr ->
-        (* need to subtract so as not to count the custom_operations field *)
-        sub_int (get_size arr dbg) (int ~dbg 1) dbg)
-  in
-  tag_int (lsr_int res (int ~dbg 2) dbg) dbg
+  unboxed_custom_array_length ~log2_element_words:3 arr dbg
 
 let unboxed_vec512_array_length arr dbg =
-  let res =
-    bind "arr" arr (fun arr ->
-        (* need to subtract so as not to count the custom_operations field *)
-        sub_int (get_size arr dbg) (int ~dbg 1) dbg)
-  in
-  tag_int (lsr_int res (int ~dbg 3) dbg) dbg
+  unboxed_custom_array_length ~log2_element_words:4 arr dbg
 
 let addr_array_ref arr ofs dbg =
   Cop (mk_load_mut Word_val, [array_indexing log2_size_addr arr ofs dbg], dbg)
@@ -2727,78 +2685,41 @@ let unaligned_set_64 ptr idx newval dbg =
                     [add_int (add_int ptr idx dbg) (cconst_int 7) dbg; b8],
                     dbg ) ) ) )
 
-let unaligned_load_f32 ptr idx dbg =
-  Cop (mk_load_mut (Single { reg = Float32 }), [add_int ptr idx dbg], dbg)
+let load_chunk chunk ptr idx dbg =
+  Cop (mk_load_mut chunk, [add_int ptr idx dbg], dbg)
 
-let unaligned_set_f32 ptr idx newval dbg =
-  Cop
-    ( Cstore (Single { reg = Float32 }, Assignment),
-      [add_int ptr idx dbg; newval],
-      dbg )
+let set_chunk chunk ptr idx newval dbg =
+  Cop (Cstore (chunk, Assignment), [add_int ptr idx dbg; newval], dbg)
 
-let unaligned_load_128 ptr idx dbg =
-  assert (size_vec128 = 16);
-  Cop (mk_load_mut Onetwentyeight_unaligned, [add_int ptr idx dbg], dbg)
+let unaligned_load_f32 = load_chunk (Single { reg = Float32 })
 
-let unaligned_set_128 ptr idx newval dbg =
-  assert (size_vec128 = 16);
-  Cop
-    ( Cstore (Onetwentyeight_unaligned, Assignment),
-      [add_int ptr idx dbg; newval],
-      dbg )
+let unaligned_set_f32 = set_chunk (Single { reg = Float32 })
 
-let aligned_load_128 ptr idx dbg =
-  assert (size_vec128 = 16);
-  Cop (mk_load_mut Onetwentyeight_aligned, [add_int ptr idx dbg], dbg)
+let aligned_load_128 = load_chunk Onetwentyeight_aligned
 
-let aligned_set_128 ptr idx newval dbg =
-  assert (size_vec128 = 16);
-  Cop
-    ( Cstore (Onetwentyeight_aligned, Assignment),
-      [add_int ptr idx dbg; newval],
-      dbg )
+let aligned_set_128 = set_chunk Onetwentyeight_aligned
 
-let unaligned_load_256 ptr idx dbg =
-  assert (size_vec256 = 16);
-  Cop (mk_load_mut Twofiftysix_unaligned, [add_int ptr idx dbg], dbg)
+let unaligned_load_128 = load_chunk Onetwentyeight_unaligned
 
-let unaligned_set_256 ptr idx newval dbg =
-  assert (size_vec256 = 16);
-  Cop
-    ( Cstore (Twofiftysix_unaligned, Assignment),
-      [add_int ptr idx dbg; newval],
-      dbg )
+let unaligned_set_128 = set_chunk Onetwentyeight_unaligned
 
-let aligned_load_256 ptr idx dbg =
-  assert (size_vec256 = 16);
-  Cop (mk_load_mut Twofiftysix_aligned, [add_int ptr idx dbg], dbg)
+let aligned_load_256 = load_chunk Twofiftysix_aligned
 
-let aligned_set_256 ptr idx newval dbg =
-  assert (size_vec256 = 16);
-  Cop
-    ( Cstore (Twofiftysix_aligned, Assignment),
-      [add_int ptr idx dbg; newval],
-      dbg )
+let aligned_set_256 = set_chunk Twofiftysix_aligned
 
-let unaligned_load_512 ptr idx dbg =
-  assert (size_vec512 = 16);
-  Cop (mk_load_mut Fivetwelve_unaligned, [add_int ptr idx dbg], dbg)
+let unaligned_load_256 = load_chunk Twofiftysix_unaligned
 
-let unaligned_set_512 ptr idx newval dbg =
-  assert (size_vec512 = 16);
-  Cop
-    ( Cstore (Fivetwelve_unaligned, Assignment),
-      [add_int ptr idx dbg; newval],
-      dbg )
+let unaligned_set_256 = set_chunk Twofiftysix_unaligned
 
-let aligned_load_512 ptr idx dbg =
-  assert (size_vec512 = 16);
-  Cop (mk_load_mut Fivetwelve_aligned, [add_int ptr idx dbg], dbg)
+let aligned_load_512 = load_chunk Fivetwelve_aligned
 
-let aligned_set_512 ptr idx newval dbg =
-  assert (size_vec512 = 16);
-  Cop
-    (Cstore (Fivetwelve_aligned, Assignment), [add_int ptr idx dbg; newval], dbg)
+let aligned_set_512 = set_chunk Fivetwelve_aligned
+
+let unaligned_load_512 = load_chunk Fivetwelve_unaligned
+
+let unaligned_set_512 = set_chunk Fivetwelve_unaligned
+
+(* Opaque blocks *)
 
 let opaque e dbg = Cop (Copaque, [e], dbg)
 
@@ -3547,16 +3468,14 @@ let read_from_closure_given_machtype t clos base_offset dbg =
           (* Float32 slots still take up a full word *)
           ( (non_scanned_pos + 1, scanned_pos),
             load (Single { reg = Float32 }) non_scanned_pos )
+          (* SIMD vectors stored in closures may not be aligned. *)
         | Vec128 ->
-          (* Vectors stored in closures may not be 16-byte aligned. *)
           ( (non_scanned_pos + ints_per_vec128, scanned_pos),
             load Onetwentyeight_unaligned non_scanned_pos )
         | Vec256 ->
-          (* Vectors stored in closures may not be 32-byte aligned. *)
           ( (non_scanned_pos + ints_per_vec256, scanned_pos),
             load Twofiftysix_unaligned non_scanned_pos )
         | Vec512 ->
-          (* Vectors stored in closures may not be 64-byte aligned. *)
           ( (non_scanned_pos + ints_per_vec512, scanned_pos),
             load Fivetwelve_unaligned non_scanned_pos )
         | Val -> (non_scanned_pos, scanned_pos + 1), load Word_val scanned_pos
@@ -4827,47 +4746,35 @@ let allocate_unboxed_int64_array =
 let allocate_unboxed_nativeint_array =
   allocate_unboxed_int64_or_nativeint_array custom_ops_unboxed_nativeint_array
 
-let allocate_unboxed_vec128_array ~elements (mode : Cmm.Alloc_mode.t) dbg =
+let allocate_unboxed_vector_array ~ints_per_vec ~alloc_kind ~custom_ops
+    ~elements (mode : Cmm.Alloc_mode.t) dbg =
   let header =
     let size =
-      1 (* custom_ops field *) + (ints_per_vec128 * List.length elements)
+      1 (* custom_ops field *) + (ints_per_vec * List.length elements)
     in
     match mode with
     | Heap -> custom_header ~size
     | Local -> custom_local_header ~size
   in
   Cop
-    ( Calloc (mode, Alloc_block_kind_vec128_u_array),
-      Cconst_natint (header, dbg) :: custom_ops_unboxed_vec128_array :: elements,
+    ( Calloc (mode, alloc_kind),
+      Cconst_natint (header, dbg) :: custom_ops :: elements,
       dbg )
 
-let allocate_unboxed_vec256_array ~elements (mode : Cmm.Alloc_mode.t) dbg =
-  let header =
-    let size =
-      1 (* custom_ops field *) + (ints_per_vec256 * List.length elements)
-    in
-    match mode with
-    | Heap -> custom_header ~size
-    | Local -> custom_local_header ~size
-  in
-  Cop
-    ( Calloc (mode, Alloc_block_kind_vec256_u_array),
-      Cconst_natint (header, dbg) :: custom_ops_unboxed_vec256_array :: elements,
-      dbg )
+let allocate_unboxed_vec128_array ~elements mode dbg =
+  allocate_unboxed_vector_array ~ints_per_vec:ints_per_vec128
+    ~alloc_kind:Alloc_block_kind_vec128_u_array
+    ~custom_ops:custom_ops_unboxed_vec128_array ~elements mode dbg
 
-let allocate_unboxed_vec512_array ~elements (mode : Cmm.Alloc_mode.t) dbg =
-  let header =
-    let size =
-      1 (* custom_ops field *) + (ints_per_vec512 * List.length elements)
-    in
-    match mode with
-    | Heap -> custom_header ~size
-    | Local -> custom_local_header ~size
-  in
-  Cop
-    ( Calloc (mode, Alloc_block_kind_vec512_u_array),
-      Cconst_natint (header, dbg) :: custom_ops_unboxed_vec512_array :: elements,
-      dbg )
+let allocate_unboxed_vec256_array ~elements mode dbg =
+  allocate_unboxed_vector_array ~ints_per_vec:ints_per_vec256
+    ~alloc_kind:Alloc_block_kind_vec256_u_array
+    ~custom_ops:custom_ops_unboxed_vec256_array ~elements mode dbg
+
+let allocate_unboxed_vec512_array ~elements mode dbg =
+  allocate_unboxed_vector_array ~ints_per_vec:ints_per_vec512
+    ~alloc_kind:Alloc_block_kind_vec512_u_array
+    ~custom_ops:custom_ops_unboxed_vec512_array ~elements mode dbg
 
 (* Drop internal optional arguments from exported interface *)
 let block_header x y = block_header x y

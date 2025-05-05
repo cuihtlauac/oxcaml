@@ -44,7 +44,8 @@ let simplify_array_set (array_kind : P.Array_kind.t)
             P.Array_kind.print array_kind P.Array_set_kind.print array_set_kind
             P.Array_kind.print orig_array_kind Named.print original_term)
       | Naked_floats | Naked_float32s | Naked_int32s | Naked_int64s
-      | Naked_nativeints | Naked_vec128s | Naked_vec256s | Naked_vec512s | Unboxed_product _ ->
+      | Naked_nativeints | Naked_vec128s | Naked_vec256s | Naked_vec512s
+      | Unboxed_product _ ->
         ()
     in
     let named =

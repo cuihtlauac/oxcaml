@@ -731,7 +731,7 @@ let initial_array ~loc ~array_kind ~array_size ~array_sizing =
       ( Mutable,
         Resizable_array.make ~loc array_kind (unboxed_nativeint Targetint.zero)
       )
-    | Dynamic_size, Punboxedvectorarray Unboxed_vec128 
+    | Dynamic_size, Punboxedvectorarray Unboxed_vec128
     | Dynamic_size, Punboxedvectorarray Unboxed_vec256
     | Dynamic_size, Punboxedvectorarray Unboxed_vec512 ->
       (* The above cases are not actually allowed/tested yet. *)

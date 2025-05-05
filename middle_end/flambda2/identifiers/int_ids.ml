@@ -328,9 +328,9 @@ module Const = struct
   let naked_nativeint i = create (Naked_nativeint i)
 
   let naked_vec128 i = create (Naked_vec128 i)
-  
+
   let naked_vec256 i = create (Naked_vec256 i)
-  
+
   let naked_vec512 i = create (Naked_vec512 i)
 
   let const_true = tagged_immediate Targetint_31_63.bool_true

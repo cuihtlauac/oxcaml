@@ -231,105 +231,68 @@ let immutable_unboxed_float32_array env res updates ~symbol ~elts =
   in
   env, R.set_data res block, updates
 
-let immutable_unboxed_vec128_array env res updates ~symbol ~elts =
+let immutable_unboxed_vector_array ~default ~to_cmm ~update_kind ~symbol_name
+    ~words_per_element env res updates ~symbol ~elts =
   let sym = R.symbol res symbol in
   let num_elts = List.length elts in
-  let num_fields = num_elts * 2 in
+  let num_fields = num_elts * words_per_element in
   let header =
     C.black_custom_header
       ~size:(1 (* for the custom_operations pointer *) + num_fields)
   in
-  let payload =
-    List.map
-      (Or_variable.value_map
-         ~default:(Cmm.Cvec128 { word0 = 0L; word1 = 0L })
-         ~f:(fun v ->
-           let Vector_types.Vec128.Bit_pattern.{ word0; word1 } =
-             Vector_types.Vec128.Bit_pattern.to_bits v
-           in
-           Cmm.Cvec128 { word0; word1 }))
-      elts
-  in
+  let payload = List.map (Or_variable.value_map ~default ~f:to_cmm) elts in
   let static_fields =
-    C.symbol_address (Cmm.global_symbol "caml_unboxed_vec128_array_ops")
-    :: payload
+    C.symbol_address (Cmm.global_symbol symbol_name) :: payload
   in
   let block = C.emit_block sym header static_fields in
   let env, res, updates =
-    static_unboxed_array_updates sym env res updates UK.naked_vec128s 0 elts
+    static_unboxed_array_updates sym env res updates update_kind 0 elts
   in
   env, R.set_data res block, updates
 
-let immutable_unboxed_vec256_array env res updates ~symbol ~elts =
-  let sym = R.symbol res symbol in
-  let num_elts = List.length elts in
-  let num_fields = num_elts * 2 in
-  let header =
-    C.black_custom_header
-      ~size:(1 (* for the custom_operations pointer *) + num_fields)
-  in
-  let payload =
-    List.map
-      (Or_variable.value_map
-         ~default:
-           (Cmm.Cvec256 { word0 = 0L; word1 = 0L; word2 = 0L; word3 = 0L })
-         ~f:(fun v ->
-           let Vector_types.Vec256.Bit_pattern.{ word0; word1; word2; word3 } =
-             Vector_types.Vec256.Bit_pattern.to_bits v
-           in
-           Cmm.Cvec256 { word0; word1; word2; word3 }))
-      elts
-  in
-  let static_fields =
-    C.symbol_address (Cmm.global_symbol "caml_unboxed_vec256_array_ops")
-    :: payload
-  in
-  let block = C.emit_block sym header static_fields in
-  let env, res, updates =
-    static_unboxed_array_updates sym env res updates UK.naked_vec256s 0 elts
-  in
-  env, R.set_data res block, updates
+let immutable_unboxed_vec128_array =
+  immutable_unboxed_vector_array
+    ~default:(Cmm.Cvec128 { word0 = 0L; word1 = 0L })
+    ~to_cmm:(fun v ->
+      let Vector_types.Vec128.Bit_pattern.{ word0; word1 } =
+        Vector_types.Vec128.Bit_pattern.to_bits v
+      in
+      Cmm.Cvec128 { word0; word1 })
+    ~update_kind:UK.naked_vec128s ~symbol_name:"caml_unboxed_vec128_array_ops"
+    ~words_per_element:2
 
-let immutable_unboxed_vec512_array env res updates ~symbol ~elts =
-  let sym = R.symbol res symbol in
-  let num_elts = List.length elts in
-  let num_fields = num_elts * 2 in
-  let header =
-    C.black_custom_header
-      ~size:(1 (* for the custom_operations pointer *) + num_fields)
-  in
-  let payload =
-    List.map
-      (Or_variable.value_map
-         ~default:
-           (Cmm.Cvec512
-              { word0 = 0L;
-                word1 = 0L;
-                word2 = 0L;
-                word3 = 0L;
-                word4 = 0L;
-                word5 = 0L;
-                word6 = 0L;
-                word7 = 0L
-              })
-         ~f:(fun v ->
-           let Vector_types.Vec512.Bit_pattern.
-                 { word0; word1; word2; word3; word4; word5; word6; word7 } =
-             Vector_types.Vec512.Bit_pattern.to_bits v
-           in
-           Cmm.Cvec512
-             { word0; word1; word2; word3; word4; word5; word6; word7 }))
-      elts
-  in
-  let static_fields =
-    C.symbol_address (Cmm.global_symbol "caml_unboxed_vec512_array_ops")
-    :: payload
-  in
-  let block = C.emit_block sym header static_fields in
-  let env, res, updates =
-    static_unboxed_array_updates sym env res updates UK.naked_vec512s 0 elts
-  in
-  env, R.set_data res block, updates
+let immutable_unboxed_vec256_array =
+  immutable_unboxed_vector_array
+    ~default:(Cmm.Cvec256 { word0 = 0L; word1 = 0L; word2 = 0L; word3 = 0L })
+    ~to_cmm:(fun v ->
+      let Vector_types.Vec256.Bit_pattern.{ word0; word1; word2; word3 } =
+        Vector_types.Vec256.Bit_pattern.to_bits v
+      in
+      Cmm.Cvec256 { word0; word1; word2; word3 })
+    ~update_kind:UK.naked_vec256s ~symbol_name:"caml_unboxed_vec256_array_ops"
+    ~words_per_element:4
+
+let immutable_unboxed_vec512_array =
+  immutable_unboxed_vector_array
+    ~default:
+      (Cmm.Cvec512
+         { word0 = 0L;
+           word1 = 0L;
+           word2 = 0L;
+           word3 = 0L;
+           word4 = 0L;
+           word5 = 0L;
+           word6 = 0L;
+           word7 = 0L
+         })
+    ~to_cmm:(fun v ->
+      let Vector_types.Vec512.Bit_pattern.
+            { word0; word1; word2; word3; word4; word5; word6; word7 } =
+        Vector_types.Vec512.Bit_pattern.to_bits v
+      in
+      Cmm.Cvec512 { word0; word1; word2; word3; word4; word5; word6; word7 })
+    ~update_kind:UK.naked_vec512s ~symbol_name:"caml_unboxed_vec512_array_ops"
+    ~words_per_element:8
 
 let static_const0 env res ~updates (bound_static : Bound_static.Pattern.t)
     (static_const : Static_const.t) =

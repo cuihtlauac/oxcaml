@@ -188,7 +188,8 @@ module Array_kind = struct
   let rec width_in_scalars t =
     match t with
     | Immediates | Values | Naked_floats | Naked_float32s | Naked_int32s
-    | Naked_int64s | Naked_nativeints | Naked_vec128s | Naked_vec256s | Naked_vec512s ->
+    | Naked_int64s | Naked_nativeints | Naked_vec128s | Naked_vec256s
+    | Naked_vec512s ->
       1
     | Unboxed_product kinds ->
       List.fold_left
@@ -449,12 +450,12 @@ module Duplicate_array_kind = struct
     | _, Naked_int32s _ -> 1
     | Naked_int64s _, _ -> -1
     | _, Naked_int64s _ -> 1
-    | Naked_nativeints _, _ -> -1
-    | _, Naked_nativeints _ -> 1
     | Naked_vec128s _, _ -> -1
     | _, Naked_vec128s _ -> 1
     | Naked_vec256s _, _ -> -1
     | _, Naked_vec256s _ -> 1
+    | Naked_vec512s _, _ -> -1
+    | _, Naked_vec512s _ -> 1
 end
 
 module Block_access_field_kind = struct
@@ -641,8 +642,8 @@ let reading_from_an_array (array_kind : Array_kind.t)
   let effects : Effects.t =
     match array_kind with
     | Immediates | Values | Naked_floats | Naked_float32s | Naked_int32s
-    | Naked_int64s | Naked_nativeints | Naked_vec128s | Naked_vec256s | Naked_vec512s
-    | Unboxed_product _ ->
+    | Naked_int64s | Naked_nativeints | Naked_vec128s | Naked_vec256s
+    | Naked_vec512s | Unboxed_product _ ->
       No_effects
   in
   let coeffects =

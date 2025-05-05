@@ -410,14 +410,14 @@ let dump ppf op =
   | Const_float f -> Format.fprintf ppf "const_float %F" (Int64.float_of_bits f)
   | Const_symbol s -> Format.fprintf ppf "const_symbol %s" s.sym_name
   | Const_vec128 { word0; word1 } ->
-    Format.fprintf ppf "const vec128 %016Lx:%016Lx" word1 word0
+    Format.fprintf ppf "const vec128 %016Lx:%016Lx" word0 word1
   | Const_vec256 { word0; word1; word2; word3 } ->
-    Format.fprintf ppf "const vec256 %016Lx:%016Lx:%016Lx:%016Lx" word3 word2
-      word1 word0
+    Format.fprintf ppf "const vec256 %016Lx:%016Lx:%016Lx:%016Lx" word0 word1
+      word2 word3
   | Const_vec512 { word0; word1; word2; word3; word4; word5; word6; word7 } ->
     Format.fprintf ppf
       "const vec512 %016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx:%016Lx"
-      word7 word6 word5 word4 word3 word2 word1 word0
+      word0 word1 word2 word3 word4 word5 word6 word7
   | Stackoffset n -> Format.fprintf ppf "stackoffset %d" n
   | Load _ -> Format.fprintf ppf "load"
   | Store _ -> Format.fprintf ppf "store"

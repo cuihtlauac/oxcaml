@@ -115,10 +115,9 @@ let phys_reg ty n =
   | Int | Addr | Val -> hard_int_reg.(n)
   | Float -> hard_float_reg.(n - 100)
   | Float32 -> hard_float32_reg.(n - 100)
-  | Vec128 -> hard_vec128_reg.(n - 100)
+  | Vec128 | Valx2 -> hard_vec128_reg.(n - 100)
   | Vec256 -> hard_vec256_reg.(n - 100)
   | Vec512 -> hard_vec512_reg.(n - 100)
-  | Valx2 -> hard_vec128_reg.(n - 100)
 
 let rax = phys_reg Int 0
 let rdi = phys_reg Int 2
@@ -130,7 +129,7 @@ let rbp = phys_reg Int 12
 
 (* CSE needs to know that all versions of xmm15 are destroyed. *)
 let destroy_xmm n =
-  [| phys_reg Float (100 + n); phys_reg Float32 (100 + n); 
+  [| phys_reg Float (100 + n); phys_reg Float32 (100 + n);
      phys_reg Vec128 (100 + n); phys_reg Vec256 (100 + n); phys_reg Vec512 (100 + n) |]
 
 let destroyed_by_plt_stub =
@@ -185,7 +184,7 @@ let calling_conventions
         loc.(i) <- phys_reg Vec128 !float;
         incr float
       end else begin
-        ofs := Misc.align !ofs 16;
+        ofs := Misc.align !ofs size_vec128;
         loc.(i) <- stack_slot (make_stack !ofs) Vec128;
         ofs := !ofs + size_vec128
       end
@@ -194,18 +193,18 @@ let calling_conventions
         loc.(i) <- phys_reg Vec256 !float;
         incr float
       end else begin
-        ofs := Misc.align !ofs 32;
+        ofs := Misc.align !ofs size_vec256;
         loc.(i) <- stack_slot (make_stack !ofs) Vec256;
-        ofs := !ofs + 32 (* 256 bits = 32 bytes *)
+        ofs := !ofs + size_vec256
       end
     | Vec512 ->
       if !float <= last_float then begin
         loc.(i) <- phys_reg Vec512 !float;
         incr float
       end else begin
-        ofs := Misc.align !ofs 64;
+        ofs := Misc.align !ofs size_vec512;
         loc.(i) <- stack_slot (make_stack !ofs) Vec512;
-        ofs := !ofs + 64 (* 512 bits = 64 bytes *)
+        ofs := !ofs + size_vec512
       end
     | Valx2 ->
       Misc.fatal_error "Unexpected machtype_component Valx2"
@@ -219,8 +218,9 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  (* CR mslater: (SIMD) will need to be 32/64 if vec256/512 are used. *)
-  (loc, Misc.align (max 0 !ofs) 16)  (* keep stack 16-aligned *)
+  (* Keep stack 16-aligned. Note the ABI does not require higher
+     alignment even when passing 256/512 bit vectors. *)
+  (loc, Misc.align (max 0 !ofs) 16)
 
 let incoming ofs : Reg.stack_location =
   if ofs >= 0

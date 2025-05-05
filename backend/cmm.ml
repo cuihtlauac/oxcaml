@@ -88,13 +88,10 @@ let lub_component comp1 comp2 =
   | Vec512, Vec512 -> Vec512
   | (Int | Addr | Val), (Float | Float32 | Vec128 | Vec256 | Vec512)
   | (Float | Float32 | Vec128 | Vec256 | Vec512), (Int | Addr | Val)
-  | (Float | Float32), (Vec128 | Vec256 | Vec512)
-  | (Vec128 | Vec256 | Vec512), (Float | Float32)
+  | (Float | Float32 | Vec256 | Vec512), (Vec128 | Vec256 | Vec512)
+  | (Vec128 | Vec256 | Vec512), (Float | Float32 | Vec256 | Vec512)
   | Float32, Float
-  | Float, Float32
-  | Vec128, (Vec256 | Vec512)
-  | Vec256, (Vec128 | Vec512)
-  | Vec512, (Vec128 | Vec256) ->
+  | Float, Float32 ->
     Printf.eprintf "%d %d\n%!" (Obj.magic comp1) (Obj.magic comp2);
     (* Float unboxing code must be sure to avoid this case. *)
     assert false
@@ -119,13 +116,10 @@ let ge_component comp1 comp2 =
   | Vec512, Vec512 -> true
   | (Int | Addr | Val), (Float | Float32 | Vec128 | Vec256 | Vec512)
   | (Float | Float32 | Vec128 | Vec256 | Vec512), (Int | Addr | Val)
-  | (Float | Float32), (Vec128 | Vec256 | Vec512)
-  | (Vec128 | Vec256 | Vec512), (Float | Float32)
+  | (Float | Float32 | Vec256 | Vec512), (Vec128 | Vec256 | Vec512)
+  | (Vec128 | Vec256 | Vec512), (Float | Float32 | Vec256 | Vec512)
   | Float32, Float
-  | Float, Float32
-  | Vec128, (Vec256 | Vec512)
-  | Vec256, (Vec128 | Vec512)
-  | Vec512, (Vec128 | Vec256) ->
+  | Float, Float32 ->
     Printf.eprintf "GE: %d %d\n%!" (Obj.magic comp1) (Obj.magic comp2);
     assert false
   | Valx2, _ | _, Valx2 ->
@@ -305,10 +299,10 @@ type memory_chunk =
   | Double
   | Onetwentyeight_unaligned
   | Onetwentyeight_aligned
-  | Twofiftysix_unaligned (* word-aligned 256-bit vector *)
-  | Twofiftysix_aligned (* 32-byte-aligned 256-bit vector *)
-  | Fivetwelve_unaligned (* word-aligned 512-bit vector *)
-  | Fivetwelve_aligned (* 64-byte-aligned 512-bit vector *)
+  | Twofiftysix_unaligned
+  | Twofiftysix_aligned
+  | Fivetwelve_unaligned
+  | Fivetwelve_aligned
 
 type reinterpret_cast =
   | Int_of_value

@@ -366,9 +366,9 @@ let transl_vec128_builtin name args dbg _typ_res =
       | [i0; i1; i2; i3] -> i0, i1, i2, i3
       | _ -> assert false
     in
-    let low = pack_int32s i0 i1 in
-    let high = pack_int32s i2 i3 in
-    Some (Cconst_vec128 ({ word0 = low; word1 = high }, dbg))
+    let word0 = pack_int32s i0 i1 in
+    let word1 = pack_int32s i2 i3 in
+    Some (Cconst_vec128 ({ word0; word1 }, dbg))
   | "caml_float64x2_const1" ->
     let f = const_float_args 1 args name |> List.hd in
     let i = Int64.bits_of_float f in

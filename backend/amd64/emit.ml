@@ -914,7 +914,7 @@ let move (src : Reg.t) (dst : Reg.t) =
     if distinct then I.movapd (reg src) (reg dst)
   | Vec256, (Reg _ | Stack _), Vec256, (Reg _ | Stack _)
   | Vec512, (Reg _ | Stack _), Vec512, (Reg _ | Stack _) ->
-    (* Vec256/512 stack slots are not aligned. *)
+    (* CR-soon mslater: vec256/512 stack slots are not aligned. *)
     if distinct then I.movupd (reg src) (reg dst)
   | Float, (Reg _ | Stack _), Float, (Reg _ | Stack _) ->
     if distinct then I.movsd (reg src) (reg dst)

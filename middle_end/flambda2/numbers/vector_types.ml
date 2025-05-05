@@ -83,19 +83,6 @@ module Vec128 = struct
 
     let of_bits { word0; word1 } = of_int64_array [| word0; word1 |]
   end
-
-  module Set = struct
-    include Set.Make (Bit_pattern)
-
-    let print ppf s =
-      Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
-
-    let to_string s = Printf.sprintf "<vec set with %d elements>" (cardinal s)
-
-    let union_list sets = List.fold_left union empty sets
-
-    let get_singleton s = if cardinal s = 1 then Some (choose s) else None
-  end
 end
 
 module Vec256 = struct
@@ -118,19 +105,6 @@ module Vec256 = struct
 
     let of_bits { word0; word1; word2; word3 } =
       of_int64_array [| word0; word1; word2; word3 |]
-  end
-
-  module Set = struct
-    include Set.Make (Bit_pattern)
-
-    let print ppf s =
-      Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
-
-    let to_string s = Printf.sprintf "<vec set with %d elements>" (cardinal s)
-
-    let union_list sets = List.fold_left union empty sets
-
-    let get_singleton s = if cardinal s = 1 then Some (choose s) else None
   end
 end
 
@@ -160,18 +134,5 @@ module Vec512 = struct
     let of_bits { word0; word1; word2; word3; word4; word5; word6; word7 } =
       of_int64_array
         [| word0; word1; word2; word3; word4; word5; word6; word7 |]
-  end
-
-  module Set = struct
-    include Set.Make (Bit_pattern)
-
-    let print ppf s =
-      Format.fprintf ppf "<vec set with %d elements>" (cardinal s)
-
-    let to_string s = Printf.sprintf "<vec set with %d elements>" (cardinal s)
-
-    let union_list sets = List.fold_left union empty sets
-
-    let get_singleton s = if cardinal s = 1 then Some (choose s) else None
   end
 end

@@ -31,7 +31,7 @@ open Misc
    The .cmx file contains these infos (as an externed record) plus a MD5
    of these infos *)
 
-(* Import machtype directly from [Cmm] to maintain compatibility. *)
+(* Declare machtype here to avoid depending on [Cmm]. *)
 type machtype_component = Val | Addr | Int | Float | Vec128 | Vec256 | Vec512 | Float32 | Valx2
 type machtype = machtype_component array
 

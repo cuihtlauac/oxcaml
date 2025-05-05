@@ -2319,11 +2319,11 @@ and n_way_join_head_of_kind_naked_nativeint env t1 ts : _ n_way_join_result =
 and n_way_join_head_of_kind_naked_vec128 env t1 ts : _ n_way_join_result =
   n_way_join_head_of_kind_naked_number ~union:TG.Head_of_kind_naked_vec128.union
     env t1 ts
-    
+
 and n_way_join_head_of_kind_naked_vec256 env t1 ts : _ n_way_join_result =
   n_way_join_head_of_kind_naked_number ~union:TG.Head_of_kind_naked_vec256.union
     env t1 ts
-    
+
 and n_way_join_head_of_kind_naked_vec512 env t1 ts : _ n_way_join_result =
   n_way_join_head_of_kind_naked_number ~union:TG.Head_of_kind_naked_vec512.union
     env t1 ts

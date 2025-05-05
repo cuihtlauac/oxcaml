@@ -130,18 +130,11 @@ let memory_chunk_of_kind (kind : Flambda_kind.With_subkind.t) : Cmm.memory_chunk
     Thirtytwo_signed
   | Naked_number Naked_float -> Double
   | Naked_number Naked_float32 -> Single { reg = Float32 }
-  | Naked_number Naked_vec128 ->
-    (* 128-bit memory operations are default unaligned. Aligned (big)array
-       operations are handled separately via cmm. *)
-    Onetwentyeight_unaligned
-  | Naked_number Naked_vec256 ->
-    (* 256-bit memory operations are default unaligned. Aligned (big)array
-       operations are handled separately via cmm. *)
-    Twofiftysix_unaligned
-  | Naked_number Naked_vec512 ->
-    (* 512-bit memory operations are default unaligned. Aligned (big)array
-       operations are handled separately via cmm. *)
-    Fivetwelve_unaligned
+  (* SIMD memory operations are default unaligned. Aligned bigarray operations
+     are handled separately via cmm. *)
+  | Naked_number Naked_vec128 -> Onetwentyeight_unaligned
+  | Naked_number Naked_vec256 -> Twofiftysix_unaligned
+  | Naked_number Naked_vec512 -> Fivetwelve_unaligned
   | Region | Rec_info ->
     Misc.fatal_errorf "Bad kind %a for [memory_chunk_of_kind]"
       Flambda_kind.With_subkind.print kind

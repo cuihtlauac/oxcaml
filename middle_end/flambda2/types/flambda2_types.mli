@@ -399,15 +399,6 @@ val these_boxed_int64s :
 val these_boxed_nativeints :
   Targetint_32_64.Set.t -> Alloc_mode.For_types.t -> t
 
-val these_boxed_vec128s :
-  Vector_types.Vec128.Bit_pattern.Set.t -> Alloc_mode.For_types.t -> t
-
-val these_boxed_vec256s :
-  Vector_types.Vec256.Bit_pattern.Set.t -> Alloc_mode.For_types.t -> t
-
-val these_boxed_vec512s :
-  Vector_types.Vec512.Bit_pattern.Set.t -> Alloc_mode.For_types.t -> t
-
 (** Building of types representing untagged / unboxed values from specified
     constants. *)
 val this_naked_immediate : Targetint_31_63.t -> t
@@ -441,12 +432,6 @@ val these_naked_int32s : Numeric_types.Int32.Set.t -> t
 val these_naked_int64s : Numeric_types.Int64.Set.t -> t
 
 val these_naked_nativeints : Targetint_32_64.Set.t -> t
-
-val these_naked_vec128s : Vector_types.Vec128.Bit_pattern.Set.t -> t
-
-val these_naked_vec256s : Vector_types.Vec256.Bit_pattern.Set.t -> t
-
-val these_naked_vec512s : Vector_types.Vec512.Bit_pattern.Set.t -> t
 
 val boxed_float32_alias_to :
   naked_float32:Variable.t -> Alloc_mode.For_types.t -> t
@@ -825,6 +810,10 @@ type to_lift = private
   | Immutable_nativeint_array of { fields : Targetint_32_64.t list }
   | Immutable_vec128_array of
       { fields : Vector_types.Vec128.Bit_pattern.t list }
+  | Immutable_vec256_array of
+      { fields : Vector_types.Vec256.Bit_pattern.t list }
+  | Immutable_vec512_array of
+      { fields : Vector_types.Vec512.Bit_pattern.t list }
   | Immutable_value_array of { fields : Simple.t list }
   | Empty_array of Empty_array_kind.t
 

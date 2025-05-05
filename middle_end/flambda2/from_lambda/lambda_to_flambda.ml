@@ -1319,7 +1319,7 @@ and cps_function env ~fid ~(recursive : Recursive.t) ?precomputed_free_idents
       Some (Unboxed_number bn)
     | Pvalue { nullable = Non_nullable; raw_kind = Pboxedvectorval bv } ->
       let bn : Flambda_kind.Boxable_number.t =
-        match bv with 
+        match bv with
         | Boxed_vec128 -> Naked_vec128
         | Boxed_vec256 -> Naked_vec256
         | Boxed_vec512 -> Naked_vec512

@@ -225,7 +225,8 @@ let insert_move_extcall_arg (ty_arg : Cmm.exttype) src dst :
   let ty_arg_is_int32 =
     match ty_arg with
     | XInt32 -> true
-    | XInt | XInt64 | XFloat32 | XFloat | XVec128 | XVec256 | XVec512 -> false
+    | XInt | XInt64 | XFloat32 | XFloat | XVec128 -> false
+    | XVec256 | XVec512 -> Misc.fatal_error "arm64: got 256/512 bit vector"
   in
   if macosx && ty_arg_is_int32 && is_stack_slot dst
   then Rewritten (Op (Specific Imove32), src, dst)

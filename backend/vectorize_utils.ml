@@ -131,9 +131,8 @@ let vectorizable_machtypes (r1 : Reg.t) (r2 : Reg.t) =
   | ( (Vec128 | Vec256 | Vec512 | Valx2),
       (Val | Int | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2) )
   | (Val | Int | Float | Float32), (Vec128 | Vec256 | Vec512 | Valx2) ->
-    Misc.fatal_errorf
-      "Unexpected vector machtype Vec128, Vec256, Vec512, or Valx2: %a %a"
-      Printreg.reg r1 Printreg.reg r2
+    Misc.fatal_errorf "Unexpected vector machtype: %a %a" Printreg.reg r1
+      Printreg.reg r2
   | Val, Val -> true
   | Val, (Int | Float | Float32) | (Int | Float | Float32), Val -> false
   | (Int | Float | Float32), (Int | Float | Float32) ->

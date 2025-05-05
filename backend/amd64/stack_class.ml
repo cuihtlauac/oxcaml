@@ -25,7 +25,12 @@ module T = struct
     | Vector512, Vector512 -> true
     | (Int64 | Float64 | Vector128 | Vector256 | Vector512), _ -> false
 
-  let hash : t -> int = function Int64 -> 0 | Float64 -> 1 | Vector128 -> 2 | Vector256 -> 3 | Vector512 -> 4
+  let hash : t -> int = function
+    | Int64 -> 0
+    | Float64 -> 1
+    | Vector128 -> 2
+    | Vector256 -> 3
+    | Vector512 -> 4
 
   let tag : t -> string = function
     | Int64 -> "i"
@@ -54,10 +59,9 @@ module T = struct
   let of_machtype : Cmm.machtype_component -> t = function
     | Val | Int | Addr -> Int64
     | Float | Float32 -> Float64
-    | Vec128 -> Vector128
+    | Vec128 | Valx2 -> Vector128
     | Vec256 -> Vector256
     | Vec512 -> Vector512
-    | Valx2 -> Vector128
 end
 
 include T

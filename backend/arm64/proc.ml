@@ -87,9 +87,8 @@ let phys_reg ty n =
   | Int | Addr | Val -> hard_int_reg.(n)
   | Float -> hard_float_reg.(n - 100)
   | Float32 -> hard_float32_reg.(n - 100)
-  | Vec128 -> hard_vec128_reg.(n - 100)
-  | Vec256 | Vec512 -> Misc.fatal_error "Vec256 and Vec512 not supported on ARM64"
-  | Valx2 -> hard_vec128_reg.(n - 100)
+  | Vec128 | Valx2 -> hard_vec128_reg.(n - 100)
+  | Vec256 | Vec512 -> Misc.fatal_error "arm64: got 256/512 bit vector"
 let reg_x8 = phys_reg Int 8
 
 let stack_slot slot ty =
@@ -123,7 +122,6 @@ let loc_float = loc_float_gen Float Arch.size_float
 (* float32 slots still take up a full word *)
 let loc_float32 = loc_float_gen Float32 Arch.size_float
 let loc_vec128 = loc_float_gen Vec128 Arch.size_vec128
-(* CR mslater: (SIMD) will need to be 32/64 if vec256/512 are used. *)
 
 let loc_int32 last_int make_stack int ofs =
   if !int <= last_int then begin
@@ -150,7 +148,7 @@ let calling_conventions
     | Vec128 ->
         loc.(i) <- loc_vec128 last_float make_stack float ofs
     | Vec256 | Vec512 ->
-        Misc.fatal_error "Vec256 and Vec512 not supported on ARM64"
+        Misc.fatal_error "arm64: got 256/512 bit vector"
     | Float32 ->
         loc.(i) <- loc_float32 last_float make_stack float ofs
     | Valx2 ->

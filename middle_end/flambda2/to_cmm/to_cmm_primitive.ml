@@ -273,7 +273,8 @@ let array_length ~dbg arr (kind : P.Array_kind.t) =
   | Naked_vec256s -> C.unboxed_vec256_array_length arr dbg
   | Naked_vec512s -> C.unboxed_vec512_array_length arr dbg
 
-let array_load_128 ~dbg ~element_width_log2 ~has_custom_ops arr index =
+let array_load_vector ~(vec_kind : Vector_types.Kind.t) ~dbg ~element_width_log2
+    ~has_custom_ops arr index =
   let index =
     C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
   in
@@ -283,45 +284,19 @@ let array_load_128 ~dbg ~element_width_log2 ~has_custom_ops arr index =
     then C.add_int index (Cconst_int (Arch.size_addr, dbg)) dbg
     else index
   in
-  C.unaligned_load_128 arr index dbg
+  match vec_kind with
+  | Vec128 -> C.unaligned_load_128 arr index dbg
+  | Vec256 -> C.unaligned_load_256 arr index dbg
+  | Vec512 -> C.unaligned_load_512 arr index dbg
 
-let array_load_256 ~dbg ~element_width_log2 ~has_custom_ops arr index =
-  let index =
-    C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
-  in
-  let index =
-    (* Skip custom_ops pointer *)
-    if has_custom_ops
-    then C.add_int index (Cconst_int (Arch.size_addr, dbg)) dbg
-    else index
-  in
-  C.unaligned_load_256 arr index dbg
+let array_load_128 = array_load_vector ~vec_kind:Vec128
 
-let array_load_512 ~dbg ~element_width_log2 ~has_custom_ops arr index =
-  let index =
-    C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
-  in
-  let index =
-    (* Skip custom_ops pointer *)
-    if has_custom_ops
-    then C.add_int index (Cconst_int (Arch.size_addr, dbg)) dbg
-    else index
-  in
-  C.unaligned_load_512 arr index dbg
+let array_load_256 = array_load_vector ~vec_kind:Vec256
 
-let array_set_128 ~dbg ~element_width_log2 ~has_custom_ops arr index new_value =
-  let index =
-    C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
-  in
-  let index =
-    (* Skip custom_ops pointer *)
-    if has_custom_ops
-    then C.add_int index (Cconst_int (Arch.size_addr, dbg)) dbg
-    else index
-  in
-  C.unaligned_set_128 arr index new_value dbg
+let array_load_512 = array_load_vector ~vec_kind:Vec512
 
-let array_set_256 ~dbg ~element_width_log2 ~has_custom_ops arr index new_value =
+let array_set_vector ~(vec_kind : Vector_types.Kind.t) ~dbg ~element_width_log2
+    ~has_custom_ops arr index new_value =
   let index =
     C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
   in
@@ -331,19 +306,16 @@ let array_set_256 ~dbg ~element_width_log2 ~has_custom_ops arr index new_value =
     then C.add_int index (Cconst_int (Arch.size_addr, dbg)) dbg
     else index
   in
-  C.unaligned_set_256 arr index new_value dbg
+  match vec_kind with
+  | Vec128 -> C.unaligned_set_128 arr index new_value dbg
+  | Vec256 -> C.unaligned_set_256 arr index new_value dbg
+  | Vec512 -> C.unaligned_set_512 arr index new_value dbg
 
-let array_set_512 ~dbg ~element_width_log2 ~has_custom_ops arr index new_value =
-  let index =
-    C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
-  in
-  let index =
-    (* Skip custom_ops pointer *)
-    if has_custom_ops
-    then C.add_int index (Cconst_int (Arch.size_addr, dbg)) dbg
-    else index
-  in
-  C.unaligned_set_512 arr index new_value dbg
+let array_set_128 = array_set_vector ~vec_kind:Vec128
+
+let array_set_256 = array_set_vector ~vec_kind:Vec256
+
+let array_set_512 = array_set_vector ~vec_kind:Vec512
 
 let array_load ~dbg (array_kind : P.Array_kind.t)
     (load_kind : P.Array_load_kind.t) ~arr ~index =
@@ -484,10 +456,10 @@ let array_set0 ~dbg (array_kind : P.Array_kind.t)
   | Naked_vec128s, Naked_vec128s ->
     array_set_128 ~dbg ~element_width_log2:4 ~has_custom_ops:true arr index
       new_value
-  | Naked_vec128s, Naked_vec256s ->
+  | Naked_vec256s, Naked_vec128s ->
     array_set_128 ~dbg ~element_width_log2:5 ~has_custom_ops:true arr index
       new_value
-  | Naked_vec128s, Naked_vec512s ->
+  | Naked_vec512s, Naked_vec128s ->
     array_set_128 ~dbg ~element_width_log2:6 ~has_custom_ops:true arr index
       new_value
   | (Immediates | Naked_floats), Naked_vec256s ->
@@ -499,13 +471,13 @@ let array_set0 ~dbg (array_kind : P.Array_kind.t)
   | (Naked_int32s | Naked_float32s), Naked_vec256s ->
     array_set_256 ~dbg ~element_width_log2:2 ~has_custom_ops:true arr index
       new_value
-  | Naked_vec256s, Naked_vec128s ->
+  | Naked_vec128s, Naked_vec256s ->
     array_set_256 ~dbg ~element_width_log2:4 ~has_custom_ops:true arr index
       new_value
   | Naked_vec256s, Naked_vec256s ->
     array_set_256 ~dbg ~element_width_log2:5 ~has_custom_ops:true arr index
       new_value
-  | Naked_vec256s, Naked_vec512s ->
+  | Naked_vec512s, Naked_vec256s ->
     array_set_256 ~dbg ~element_width_log2:6 ~has_custom_ops:true arr index
       new_value
   | (Immediates | Naked_floats), Naked_vec512s ->
@@ -517,10 +489,10 @@ let array_set0 ~dbg (array_kind : P.Array_kind.t)
   | (Naked_int32s | Naked_float32s), Naked_vec512s ->
     array_set_512 ~dbg ~element_width_log2:2 ~has_custom_ops:true arr index
       new_value
-  | Naked_vec512s, Naked_vec128s ->
+  | Naked_vec128s, Naked_vec512s ->
     array_set_512 ~dbg ~element_width_log2:4 ~has_custom_ops:true arr index
       new_value
-  | Naked_vec512s, Naked_vec256s ->
+  | Naked_vec256s, Naked_vec512s ->
     array_set_512 ~dbg ~element_width_log2:5 ~has_custom_ops:true arr index
       new_value
   | Naked_vec512s, Naked_vec512s ->

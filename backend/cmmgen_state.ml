@@ -98,9 +98,9 @@ let rank_structured_constant = function
   | Const_float_array _ -> 5
   | Const_string _ -> 6
   | Const_vec128 _ -> 8
-  | Const_float32 _ -> 9
-  | Const_vec256 _ -> 10
-  | Const_vec512 _ -> 11
+  | Const_vec256 _ -> 9
+  | Const_vec512 _ -> 10
+  | Const_float32 _ -> 11
 
 let compare_structured_constants c1 c2 =
   match c1, c2 with
@@ -115,8 +115,7 @@ let compare_structured_constants c1 c2 =
   | Const_string s1, Const_string s2 -> String.compare s1 s2
   | ( Const_vec128 { word0 = l0; word1 = l1 },
       Const_vec128 { word0 = r0; word1 = r1 } ) ->
-    let cmp = Int64.compare l0 r0 in
-    if cmp = 0 then Int64.compare l1 r1 else cmp
+    List.compare Int64.compare [l0; l1] [r0; r1]
   | ( Const_vec256 { word0 = l0; word1 = l1; word2 = l2; word3 = l3 },
       Const_vec256 { word0 = r0; word1 = r1; word2 = r2; word3 = r3 } ) ->
     List.compare Int64.compare [l0; l1; l2; l3] [r0; r1; r2; r3]

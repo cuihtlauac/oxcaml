@@ -138,15 +138,6 @@ let these_boxed_int64s is alloc_mode =
 let these_boxed_nativeints is alloc_mode =
   TG.box_nativeint (these_naked_nativeints is) alloc_mode
 
-let these_boxed_vec128s vs alloc_mode =
-  TG.box_vec128 (these_naked_vec128s vs) alloc_mode
-
-let these_boxed_vec256s vs alloc_mode =
-  TG.box_vec256 (these_naked_vec256s vs) alloc_mode
-
-let these_boxed_vec512s vs alloc_mode =
-  TG.box_vec512 (these_naked_vec512s vs) alloc_mode
-
 let any_boxed_float32 =
   TG.box_float32 TG.any_naked_float32 (Alloc_mode.For_types.unknown ())
 
@@ -161,15 +152,6 @@ let any_boxed_int64 =
 
 let any_boxed_nativeint =
   TG.box_nativeint TG.any_naked_nativeint (Alloc_mode.For_types.unknown ())
-
-let any_boxed_vec128 =
-  TG.box_vec128 TG.any_naked_vec128 (Alloc_mode.For_types.unknown ())
-
-let any_boxed_vec256 =
-  TG.box_vec256 TG.any_naked_vec256 (Alloc_mode.For_types.unknown ())
-
-let any_boxed_vec512 =
-  TG.box_vec512 TG.any_naked_vec512 (Alloc_mode.For_types.unknown ())
 
 let any_boxed_float32_non_null =
   TG.Head_of_kind_value_non_null.create_boxed_float32 TG.any_naked_float32

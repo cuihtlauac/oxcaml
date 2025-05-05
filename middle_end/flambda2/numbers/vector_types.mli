@@ -41,18 +41,6 @@ module Vec128 : sig
 
     val of_bits : bits -> t
   end
-
-  module Set : sig
-    include Set.S with type elt = Bit_pattern.t
-
-    val print : Format.formatter -> t -> unit
-
-    val to_string : t -> string
-
-    val union_list : t list -> t
-
-    val get_singleton : t -> elt option
-  end
 end
 
 module Vec256 : sig
@@ -74,18 +62,6 @@ module Vec256 : sig
     val to_bits : t -> bits
 
     val of_bits : bits -> t
-  end
-
-  module Set : sig
-    include Set.S with type elt = Bit_pattern.t
-
-    val print : Format.formatter -> t -> unit
-
-    val to_string : t -> string
-
-    val union_list : t list -> t
-
-    val get_singleton : t -> elt option
   end
 end
 
@@ -112,17 +88,5 @@ module Vec512 : sig
     val to_bits : t -> bits
 
     val of_bits : bits -> t
-  end
-
-  module Set : sig
-    include Set.S with type elt = Bit_pattern.t
-
-    val print : Format.formatter -> t -> unit
-
-    val to_string : t -> string
-
-    val union_list : t list -> t
-
-    val get_singleton : t -> elt option
   end
 end

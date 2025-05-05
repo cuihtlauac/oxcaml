@@ -65,7 +65,9 @@ module Const : sig
   val naked_nativeint : Targetint_32_64.t -> t
 
   val naked_vec128 : Vector_types.Vec128.Bit_pattern.t -> t
+
   val naked_vec256 : Vector_types.Vec256.Bit_pattern.t -> t
+
   val naked_vec512 : Vector_types.Vec512.Bit_pattern.t -> t
 
   module Descr : sig

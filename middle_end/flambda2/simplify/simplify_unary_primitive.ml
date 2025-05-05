@@ -123,11 +123,11 @@ let simplify_unbox_number (boxable_number_kind : K.Boxable_number.t) dacc
           (Alloc_mode.For_types.unknown ()),
         K.naked_vec128 )
     | Naked_vec256 ->
-      ( T.boxed_vec128_alias_to ~naked_vec128:result_var'
+      ( T.boxed_vec256_alias_to ~naked_vec256:result_var'
           (Alloc_mode.For_types.unknown ()),
         K.naked_vec256 )
     | Naked_vec512 ->
-      ( T.boxed_vec128_alias_to ~naked_vec128:result_var'
+      ( T.boxed_vec512_alias_to ~naked_vec512:result_var'
           (Alloc_mode.For_types.unknown ()),
         K.naked_vec512 )
   in
@@ -189,8 +189,8 @@ let simplify_box_number (boxable_number_kind : K.Boxable_number.t) alloc_mode
     | Naked_int64 -> T.box_int64 naked_number_ty alloc_mode
     | Naked_nativeint -> T.box_nativeint naked_number_ty alloc_mode
     | Naked_vec128 -> T.box_vec128 naked_number_ty alloc_mode
-    | Naked_vec256 -> T.box_vec128 naked_number_ty alloc_mode
-    | Naked_vec512 -> T.box_vec128 naked_number_ty alloc_mode
+    | Naked_vec256 -> T.box_vec256 naked_number_ty alloc_mode
+    | Naked_vec512 -> T.box_vec512 naked_number_ty alloc_mode
   in
   let dacc = DA.add_variable dacc result_var ty in
   SPR.create original_term ~try_reify:true dacc
