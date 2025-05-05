@@ -12,6 +12,28 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** This module defines the scalar types intrinsic to the OCaml compiler, and the
+    primitive operations defined on them.
+
+    A [Scalar.t] represents a particular OCaml type that represents a scalar value. It
+    might be tagged, boxed, or neither. There is also a type parameter for the locality of
+    the scalar value, which represents the location in which that boxed values are
+    allocated.
+
+    The important consideration is for a [Scalar.t] to represent all of the primitives
+    that we want to expose. The submodules are organized to make it easy for use different
+    subsets of scalars in different places. Some examples:
+
+    - Primitive arguments don't depend on the locality of their arguments, but the results
+    do.
+    - Some primitives only take integers, some take only floats, and Three_way_compare
+    takes any scalar type.
+    - The bytecode compiler wants to easily map unboxed/untagged values to their [value]
+    equivalents
+    - The middle-end wants to easily cast between any integraal values using only certain
+    primitives.
+*)
+
 type any_locality_mode = Any_locality_mode
 
 module Integer_comparison : sig
