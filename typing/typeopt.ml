@@ -535,6 +535,30 @@ let rec value_kind env ~loc ~visited ~depth ~num_nodes_visited ty
     num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec128)
   | Tconstr(p, _, _) when Path.same p Predef.path_float64x2 ->
     num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec128)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int8x32 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec256)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int16x16 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec256)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int32x8 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec256)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int64x4 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec256)
+  | Tconstr(p, _, _) when Path.same p Predef.path_float32x8->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec256)
+  | Tconstr(p, _, _) when Path.same p Predef.path_float64x4 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec256)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int8x64 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec512)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int16x32 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec512)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int32x16 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec512)
+  | Tconstr(p, _, _) when Path.same p Predef.path_int64x8 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec512)
+  | Tconstr(p, _, _) when Path.same p Predef.path_float32x16->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec512)
+  | Tconstr(p, _, _) when Path.same p Predef.path_float64x8 ->
+    num_nodes_visited, non_nullable (Pboxedvectorval Boxed_vec512)
   | Tconstr(p, _, _)
     when (Path.same p Predef.path_array
           || Path.same p Predef.path_floatarray) ->
@@ -888,7 +912,7 @@ let[@inline always] rec layout_of_const_sort_generic ~value_kind ~error
                      Language_extension.(is_at_least SIMD Stable) ->
     Lambda.Punboxed_vector Unboxed_vec128
   | Base Vec256 when Language_extension.(is_at_least Layouts Stable) &&
-                     Language_extension.(is_at_least SIMD Alpha) ->
+                     Language_extension.(is_at_least SIMD Beta) ->
     Lambda.Punboxed_vector Unboxed_vec256
   | Base Vec512 when Language_extension.(is_at_least Layouts Stable) &&
                      Language_extension.(is_at_least SIMD Alpha) ->

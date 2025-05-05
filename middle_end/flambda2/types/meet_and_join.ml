@@ -802,6 +802,16 @@ and meet_head_of_kind_value_non_null env
       ~rebuild:TG.Head_of_kind_value_non_null.create_boxed_vec128 ~meet_a:meet
       ~meet_b:meet_alloc_mode ~left_a:n1 ~right_a:n2 ~left_b:alloc_mode1
       ~right_b:alloc_mode2
+  | Boxed_vec256 (n1, alloc_mode1), Boxed_vec256 (n2, alloc_mode2) ->
+    combine_results2 env
+      ~rebuild:TG.Head_of_kind_value_non_null.create_boxed_vec256 ~meet_a:meet
+      ~meet_b:meet_alloc_mode ~left_a:n1 ~right_a:n2 ~left_b:alloc_mode1
+      ~right_b:alloc_mode2
+  | Boxed_vec512 (n1, alloc_mode1), Boxed_vec512 (n2, alloc_mode2) ->
+    combine_results2 env
+      ~rebuild:TG.Head_of_kind_value_non_null.create_boxed_vec512 ~meet_a:meet
+      ~meet_b:meet_alloc_mode ~left_a:n1 ~right_a:n2 ~left_b:alloc_mode1
+      ~right_b:alloc_mode2
   | ( Closures { by_function_slot = by_function_slot1; alloc_mode = alloc_mode1 },
       Closures
         { by_function_slot = by_function_slot2; alloc_mode = alloc_mode2 } ) ->
@@ -1782,6 +1792,14 @@ and join_head_of_kind_value_non_null env
     let>+ n = join env n1 n2 in
     let alloc_mode = join_alloc_mode alloc_mode1 alloc_mode2 in
     TG.Head_of_kind_value_non_null.create_boxed_vec128 n alloc_mode
+  | Boxed_vec256 (n1, alloc_mode1), Boxed_vec256 (n2, alloc_mode2) ->
+    let>+ n = join env n1 n2 in
+    let alloc_mode = join_alloc_mode alloc_mode1 alloc_mode2 in
+    TG.Head_of_kind_value_non_null.create_boxed_vec256 n alloc_mode
+  | Boxed_vec512 (n1, alloc_mode1), Boxed_vec512 (n2, alloc_mode2) ->
+    let>+ n = join env n1 n2 in
+    let alloc_mode = join_alloc_mode alloc_mode1 alloc_mode2 in
+    TG.Head_of_kind_value_non_null.create_boxed_vec512 n alloc_mode
   | ( Closures { by_function_slot = by_function_slot1; alloc_mode = alloc_mode1 },
       Closures
         { by_function_slot = by_function_slot2; alloc_mode = alloc_mode2 } ) ->

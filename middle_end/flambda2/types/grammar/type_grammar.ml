@@ -141,9 +141,9 @@ and head_of_kind_naked_nativeint = Targetint_32_64.Set.t
 
 and head_of_kind_naked_vec128 = Vec128.Set.t
 
-and head_of_kind_naked_vec256 = Vector_types.Vec256.Bit_pattern.Set.t
+and head_of_kind_naked_vec256 = Vec256.Set.t
 
-and head_of_kind_naked_vec512 = Vector_types.Vec512.Bit_pattern.Set.t
+and head_of_kind_naked_vec512 = Vec512.Set.t
 
 and head_of_kind_rec_info = Rec_info_expr.t
 
