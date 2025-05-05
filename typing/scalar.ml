@@ -128,7 +128,9 @@ module Maybe_naked = struct
       | Naked (_ : any_locality_mode M.t) as t -> t
       | Value t -> Value (M.map t ~f)
 
-    let width (Naked t | Value t : _ t) = t
+    let width : _ t -> any_locality_mode M.t = function
+      | Naked t -> t
+      | Value t -> M.map t ~f:ignore_locality
 
     let to_string = function
       | Value m -> M.to_string m

@@ -403,7 +403,7 @@ let lookup_primitive loc ~poly_mode ~poly_sort pos p =
     binary (Fcmp (Scalar.Floating.ignore_locality size, cmp))
   in
   let naked scalar =
-    Scalar.Maybe_naked.Naked (Scalar.width (Scalar.ignore_locality scalar))
+    Scalar.Maybe_naked.Naked (Scalar.width scalar)
   in
   let static_cast ~src ~dst =
     let src = Scalar.ignore_locality src in

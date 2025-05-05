@@ -46,11 +46,7 @@ module Scalar = struct
     type t = Int | Boxed of boxed
 
     let of_lambda l : t Or_small_int.t =
-      match
-        Lambda.Scalar.Integral.width
-          (Lambda.Scalar.Integral.map l ~f:(fun _ ->
-             Lambda.Any_locality_mode))
-      with
+      match Lambda.Scalar.Integral.width l with
       | Taggable Int8 -> Small Int8
       | Taggable Int16 -> Small Int16
       | Taggable Int -> Builtin Int
@@ -82,11 +78,7 @@ module Scalar = struct
       | Float32 -> "float32"
 
     let of_lambda l =
-      match
-        Lambda.Scalar.Floating.width
-          (Lambda.Scalar.Floating.map l ~f:(fun _ ->
-             Lambda.Any_locality_mode))
-      with
+      match Lambda.Scalar.Floating.width l with
       | Float32 Any_locality_mode -> Float32
       | Float64 Any_locality_mode -> Float
   end
@@ -125,11 +117,7 @@ module Scalar = struct
     | Integral.Boxed boxed -> Boxed (Boxed.integral boxed)
 
   let of_lambda l : t Or_small_int.t =
-    match
-      Lambda.Scalar.width
-        (Lambda.Scalar.map l ~f:(fun _ ->
-           Lambda.Any_locality_mode))
-    with
+    match Lambda.Scalar.width l with
     | Floating l -> Builtin (Boxed (Boxed.floating (Floating.of_lambda (Value l))))
     | Integral l -> Or_small_int.map (Integral.of_lambda (Value l)) ~f:integral
 end

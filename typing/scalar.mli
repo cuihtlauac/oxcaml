@@ -89,7 +89,7 @@ module type S := sig
 
   val ignore_locality : 'a t -> any_locality_mode t
 
-  val width : any_locality_mode t -> any_locality_mode width
+  val width : _ t -> any_locality_mode width
 
   val to_string : any_locality_mode t -> string
 
