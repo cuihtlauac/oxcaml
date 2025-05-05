@@ -286,7 +286,7 @@ let is_x86 = function | X86 -> true | X64 -> false
 
 let rd_of_regf regf =
   match regf with
-  | XMM n -> n
+  | XMM n | YMM n | ZMM n -> n
 
 let rd_of_reg64 = function
   | RAX -> 0

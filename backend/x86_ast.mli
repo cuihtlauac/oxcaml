@@ -73,7 +73,10 @@ type reg64 =
 type reg8h =
   | AH | BH | CH | DH
 
-type regf = XMM of int
+type regf =
+  | XMM of int
+  | YMM of int
+  | ZMM of int
 
 type arch = X64 | X86
 

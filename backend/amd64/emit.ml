@@ -134,13 +134,18 @@ let _label s = D.label ~typ:QWORD s
 let int_reg_name : X86_ast.reg64 array =
   [| RAX; RBX; RDI; RSI; RDX; RCX; R8; R9; R12; R13; R10; R11; RBP |]
 
-let float_reg_name = Array.init 16 (fun i -> X86_ast.XMM i)
+let xmm_reg_name = Array.init 16 (fun i -> X86_ast.XMM i)
+
+let ymm_reg_name = Array.init 16 (fun i -> X86_ast.YMM i)
+
+let zmm_reg_name = Array.init 16 (fun i -> X86_ast.ZMM i)
 
 let register_name typ r : X86_ast.arg =
   match (typ : Cmm.machtype_component) with
   | Int | Val | Addr -> Reg64 int_reg_name.(r)
-  | Float | Float32 | Vec128 | Vec256 | Vec512 | Valx2 ->
-    Regf float_reg_name.(r - 100)
+  | Float | Float32 | Vec128 | Valx2 -> Regf xmm_reg_name.(r - 100)
+  | Vec256 -> Regf ymm_reg_name.(r - 100)
+  | Vec512 -> Regf zmm_reg_name.(r - 100)
 
 let phys_rax = phys_reg Int 0
 

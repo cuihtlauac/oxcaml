@@ -54,7 +54,10 @@ let equal_reg8h left right =
 
 let equal_regf left right =
   match left, right with
-  | XMM l, XMM r -> Int.equal l r
+  | XMM l, XMM r
+  | YMM l, YMM r
+  | ZMM l, ZMM r -> Int.equal l r
+  | (XMM _ | YMM _ | ZMM _), _ -> false
 
 let equal_arch left right =
   match left, right with
