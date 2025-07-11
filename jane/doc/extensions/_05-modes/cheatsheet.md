@@ -23,8 +23,6 @@ title: Cheat Sheet
 | **`global`** | MAY outlive its region      | MUST be on the heap   |
 | `local`  | MUST NOT outlive its region | MAY be on the stack   |
 
-
-
 <div style="display: flex">
 <table style="border-collapse: collapse; width: 100%;">
 <thead>
@@ -64,14 +62,12 @@ title: Cheat Sheet
 </table>
 </div>
 
-
-
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; vertical-align: middle; text-align: center;">
 <tr>
 <td></td>
 <td></td>
-<td colspan="4" style="font-weight:bold;">Functions and function nesting</td>
+<td colspan="4" style="font-weight:bold;">Future Closure</td>
 </tr>
 <tr>
 <td style=" "></td>
@@ -90,7 +86,7 @@ title: Cheat Sheet
   <code><strong><span style="color: DarkBlue">stateful</span></strong></code></td>
 </tr>
 <tr>
-<td rowspan="3" style="writing-mode: sideways-lr; font-weight: bold;">Past</td>
+<td rowspan="3" style="writing-mode: sideways-lr; font-weight: bold;">Captured Past</td>
 <td>
   <code><strong><span style="color: DarkRed">aliased</span></strong></code><br>
   <code><span style="color: DarkGreen">contended</span></code><br>
