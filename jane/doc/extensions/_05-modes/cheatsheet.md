@@ -18,10 +18,15 @@ title: Cheat Sheet
 }
 </style>
 
+This table explains how compile-time locality requirements are turned into runtime allocation requirements.
+
+
 | Mode   | Lifetime                    | Allocation            |
 | ------ | --------------------------- | --------------------- |
 | **`global`** | MAY outlive its region      | MUST be on the heap   |
 | `local`  | MUST NOT outlive its region | MAY be on the stack   |
+
+This table list all the modal axes, modes, mode orders, and mode crossings. Mode crossing is represented using a color code. Blues applies to functions related values, red applies to “deeply immutable” values, black is others.
 
 <div style="display: flex">
 <table style="border-collapse: collapse; width: 100%;">
@@ -61,6 +66,8 @@ title: Cheat Sheet
 </tbody>
 </table>
 </div>
+
+This table summarizes the inter-axes allowed capture rules. Colors are for modal axes, grouped by duality. A check mark means a closure at the above mode, can capture a value at left mode, color-wise.
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; vertical-align: middle; text-align: center;">
