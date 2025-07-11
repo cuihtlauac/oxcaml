@@ -20,7 +20,7 @@ title: Cheat Sheet
 
 | Mode   | Lifetime                    | Allocation            |
 | ------ | --------------------------- | --------------------- |
-| `global` | MAY outlive its region      | MUST be on the heap   |
+| **`global`** | MAY outlive its region      | MUST be on the heap   |
 | `local`  | MUST NOT outlive its region | MAY be on the stack   |
 
 
@@ -38,27 +38,27 @@ title: Cheat Sheet
 <tr>
 <td style="font-weight: bold; writing-mode: sideways-lr; text-align: center;">Region</td>
 <td style="text-align: left;"> </td>
-<td style="text-align: right;">Locality<br><code><em>global</em> < local</code></td>
+<td style="text-align: right;">Locality<br><code><strong>global</strong> < local</code></td>
 </tr>
 <tr>
 <td style="font-weight: bold; writing-mode: sideways-lr; text-align: center;">Aliasing</td>
-<td style="text-align: left;">Uniqueness<br><code>unique < <em>aliased</em></code></td>
-<td style="text-align: right;">Affinity<br><code><em>many</em> < once</code></td>
+<td style="text-align: left;">Uniqueness<br><code>unique < <strong>aliased</strong></code></td>
+<td style="text-align: right;"><span style="color: blue;">Affinity</span><br><code><strong>many</strong> < once</code></td>
 </tr>
 <tr>
 <td style="font-weight: bold; writing-mode: sideways-lr; text-align: center;">Threads<br></td>
-<td style="text-align: left;">Contention <br><code><em>uncontended</em> < shared < contended</code></td>
-<td style="text-align: right;">Portability<br><code>portable < <em>nonportable</em></code></td>
+<td style="text-align: left;"><span style="color: red;">Contention</span> <br><code><strong>uncontended</strong> < shared < contended</code></td>
+<td style="text-align: right;"><span style="color: blue;">Portability</span><br><code>portable < <strong>nonportable</strong></code></td>
+</tr>
+<tr>
+<td style="font-weight: bold; writing-mode: sideways-lr; text-align: center;">Purity</td>
+<td style="text-align: left;"><span style="color: red;">Visibility</span><br><code><strong>read_write</strong> < read < immutable</code></td>
+<td style="text-align: right;"><span style="color: blue;">Statefulness</span><br><code>stateless < observing < <strong>stateful</strong></code></td>
 </tr>
 <tr>
 <td style="font-weight: bold; writing-mode: sideways-lr; text-align: center;">Effects</td>
 <td style="text-align: left;"></td>
-<td style="text-align: right;">Yielding<br><code><em>unyielding</em> < yielding</code></td>
-</tr>
-<tr>
-<td style="font-weight: bold; writing-mode: sideways-lr; text-align: center;">Purity</td>
-<td style="text-align: left;">Visibility<br><code><em>read_write</em> < read < immutable</code></td>
-<td style="text-align: right;">Statefulness<br><code>stateless < observing < <em>stateful</em></code></td>
+<td style="text-align: right;"><span style="color: blue;">Yielding</span><br><code><strong>unyielding</strong> < yielding</code></td>
 </tr>
 </tbody>
 </table>
@@ -75,26 +75,26 @@ title: Cheat Sheet
 </tr>
 <tr>
 <td style=" "></td>
-<td style="font-weight: bold;">Aliasing<br>Threads<br>Purity</td>
+<td style="font-weight: bold;"><span style="color: DarkRed">Aliasing</span><br><span style="color: DarkGreen">Threads</span><br><span style="color: DarkBlue">Purity</span></td>
 <td>
-  <code><em>many</em></code><br>
-  <code>portable</code><br>
-  <code>stateless</code></td>
+  <code><strong><span style="color: DarkRed">many</span></strong></code><br>
+  <code><span style="color: DarkGreen">portable</span></code><br>
+  <code><span style="color: DarkBlue">stateless</span></code></td>
 <td>
   <br>
   <br>
-  <code>observing</code></td>
+  <code><span style="color: DarkBlue">observing</span></code></td>
 <td>
-  <code>once</code><br>
-  <code><em>nonportable</em></code><br>
-  <code><em>stateful</em></code></td>
+  <code><span style="color: DarkRed">once</span></code><br>
+  <code><strong><span style="color: DarkGreen">nonportable</span></strong></code><br>
+  <code><strong><span style="color: DarkBlue">stateful</span></strong></code></td>
 </tr>
 <tr>
-<td rowspan="3" style="writing-mode: sideways-lr; font-weight: bold;">Mutable and mutable nesting</td>
+<td rowspan="3" style="writing-mode: sideways-lr; font-weight: bold;">Past</td>
 <td>
-  <code><em>aliased</em></code><br>
-  <code>contended</code><br>
-  <code>immutable</code></td>
+  <code><strong><span style="color: DarkRed">aliased</span></strong></code><br>
+  <code><span style="color: DarkGreen">contended</span></code><br>
+  <code><span style="color: DarkBlue">immutable</span></code></td>
 <td>&check;</td>
 <td>&check;</td>
 <td>&check;</td>
@@ -102,17 +102,17 @@ title: Cheat Sheet
 <tr>
 <td>
   <br>
-  <code>shared</code><br>
-  <code>read </code></td>
+  <code><span style="color: DarkGreen">shared</span></code><br>
+  <code><span style="color: DarkBlue">read</span></code></td>
 <td></td>
 <td>&check;</td>
 <td>&check;</td>
 </tr>
 <tr>
 <td>
-  <code>unique</code><br>
-  <code><em>uncontended</em></code><br>
-  <code><em>read_write</em></code></td>
+  <code><span style="color: DarkRed">unique</spa></code><br>
+  <code><strong><span style="color: DarkGreen">uncontended</span></strong></code><br>
+  <code><strong><span style="color: DarkBlue">read_write</span></strong></code></td>
 <td></td>
 <td></td>
 <td>&check;</td>
